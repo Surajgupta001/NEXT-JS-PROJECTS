@@ -12,8 +12,13 @@ const authSeller = async (userId) => {
         } else {
             return false;
         }
+        
     } catch (error) {
-        return NextResponse.json({ success: false, message: error.message });
+        return NextResponse
+        .json({ 
+            success: false, 
+            message: error.message 
+        }, { status: 500 } );
     }
 }
 
