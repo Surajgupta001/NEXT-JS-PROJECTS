@@ -15,8 +15,12 @@ export default withAuth(
             )
                 return true
 
-            if (pathname === '/' || pathname.startsWith('/api/videos')) {
-                return true;
+            if (pathname === '/') return true;
+
+            // Allow unauthenticated GET for listing videos; protect other methods
+            if (pathname === '/api/video' || pathname.startsWith('/api/video/')) {
+                if (req.method === 'GET') return true;
+                return !!token;
             }
 
             return !!token
