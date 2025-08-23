@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import FileUpload from "../components/fileUpload";
 import { apiClient, VideoFormData } from "@/lib/api_client";
+import Image from "next/image";
 
 export default function UploadPage() {
     const { status } = useSession();
@@ -75,6 +76,18 @@ export default function UploadPage() {
                                 setVideoUrl(url);
                             }}
                         />
+                        {videoUrl && (
+                            <div className="mt-3">
+                                <p className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-300">Video preview</p>
+                                <div className="w-full overflow-hidden bg-black rounded-lg aspect-video">
+                                    <video
+                                        src={videoUrl}
+                                        controls
+                                        className="object-contain w-full h-full"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -86,6 +99,21 @@ export default function UploadPage() {
                                 setThumbnailUrl(url);
                             }}
                         />
+                        {thumbnailUrl && (
+                            <div className="mt-3">
+                                <p className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-300">Thumbnail preview</p>
+                                <div className="w-full max-w-md overflow-hidden border border-gray-200 rounded-lg dark:border-neutral-800">
+                                    <Image
+                                        src={thumbnailUrl}
+                                        alt="Thumbnail preview"
+                                        width={640}
+                                        height={360}
+                                        className="object-cover w-full h-auto"
+                                        sizes="(max-width: 768px) 100vw, 640px"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {error && (
