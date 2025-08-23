@@ -2,8 +2,11 @@ import { connectToDatabase } from "@/lib/database";
 import Video from "@/models/video";
 import type { IVideo } from "@/models/video";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function Home() {
+  const session = await getServerSession(authOptions);
   await connectToDatabase();
   const videos = await Video.find({}).sort({ createdAt: -1 }).lean();
   type VideoItem = IVideo & { _id: unknown };
@@ -14,12 +17,14 @@ export default async function Home() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Videos</h1>
-          <Link
-            href="/upload"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Upload
-          </Link>
+          {session && (
+            <Link
+              href="/upload"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Upload
+            </Link>
+          )}
         </div>
 
         {(!list || list.length === 0) ? (
