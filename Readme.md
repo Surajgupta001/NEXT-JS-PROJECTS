@@ -211,6 +211,117 @@ QuickCart/
 
 ---
 
+### 🎬 ReelKit (video-with-ai) - ImageKit Video Uploader
+
+ReelKit is a full-stack video uploader built with Next.js App Router and ImageKit. It lets authenticated users upload videos (and thumbnails) directly to ImageKit and stores metadata in MongoDB. Includes login/register, an upload form, and a home page to list and play videos.
+
+#### 🌟 Key Features
+
+- ImageKit direct uploads with signed auth via API
+- Credential-based auth (NextAuth) with login/register pages
+- MongoDB persistence for video metadata
+- Server Components for fast, SEO-friendly lists
+- Tailwind CSS v4 styling + dark mode
+
+#### 🛠️ Tech Stack
+
+- Frontend: Next.js 15, React 19, App Router, Tailwind CSS v4
+- Backend: Next.js Route Handlers (API Routes)
+- Auth: next-auth (Credentials)
+- DB: MongoDB + Mongoose
+- Media: ImageKit (upload + delivery)
+
+#### 📂 Project Structure
+
+```text
+video-with-ai/
+├── app/
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── register/route.ts          # Register user
+│   │   │   ├── imagekit-auth/route.ts     # ImageKit upload auth
+│   │   │   └── [...nextauth]/route.ts     # NextAuth handler
+│   │   └── video/route.ts                 # GET/POST videos
+│   ├── components/
+│   │   ├── providers.tsx                  # Session + ImageKit providers (client)
+│   │   └── fileUpload.tsx                 # Upload widget (client)
+│   ├── login/page.tsx                     # Sign in
+│   ├── register/page.tsx                  # Sign up
+│   ├── upload/page.tsx                    # Upload form (auth required)
+│   ├── page.tsx                           # Home: list videos
+│   ├── layout.tsx                         # Root layout
+│   └── globals.css                        # Tailwind v4 entry (@import "tailwindcss")
+├── lib/
+│   ├── auth.ts                            # NextAuth options
+│   ├── database.ts                        # Mongoose connection helper
+│   └── api_client.ts                      # Client for API calls
+├── models/
+│   ├── user.ts                            # User model (hashed passwords)
+│   └── video.ts                           # Video model
+├── next-auth.d.ts                         # Session typing
+├── next.config.ts
+├── postcss.config.mjs                     # Tailwind v4 via @tailwindcss/postcss
+└── package.json
+```
+
+#### ⚙️ Environment Variables
+
+Create `video-with-ai/.env.local`:
+
+```env
+# Database
+MONGODB_URI=your_mongodb_connection_string
+
+# NextAuth
+NEXTAUTH_SECRET=your_long_random_secret
+# Optional in some setups
+# NEXTAUTH_URL=http://localhost:3000
+
+# ImageKit
+NEXT_PUBLIC_URL_ENDPOINT=https://ik.imagekit.io/<your_imagekit_id>
+NEXT_PUBLIC_PUBLIC_KEY=public_xxxxxxxxxxxxxxxxxx
+IMAGEKIT_PRIVATE_KEY=private_xxxxxxxxxxxxxxxxxx
+```
+
+Notes:
+- `NEXT_PUBLIC_URL_ENDPOINT` and `NEXT_PUBLIC_PUBLIC_KEY` are exposed to the client.
+- `IMAGEKIT_PRIVATE_KEY` must remain server-only (used in the auth route handler).
+
+#### 🚀 Run Locally (Windows PowerShell)
+
+```powershell
+cd "c:\Programming\NEXT JS PROJECTS\video-with-ai"
+npm install
+npm run dev
+```
+
+Open <http://localhost:3000>
+
+#### 🧭 App Flow
+
+- Register at `/register`, then login at `/login`.
+- Upload videos at `/upload` (requires auth). This performs:
+   - GET `/api/auth/imagekit-auth` to fetch signed params
+   - Client-side upload to ImageKit using `@imagekit/next` upload
+   - POST `/api/video` to save metadata (title, description, videoUrl, thumbnailUrl)
+- View uploaded videos on `/` with a built-in video player.
+
+#### 🔐 API Endpoints
+
+- `GET /api/video` — List all videos
+- `POST /api/video` — Create video (auth required)
+- `POST /api/auth/register` — Register user
+- `GET /api/auth/imagekit-auth` — Get ImageKit upload auth params
+- `GET|POST /api/auth/[...nextauth]` — NextAuth routes
+
+#### 🧩 Tailwind CSS v4
+
+- PostCSS plugin is configured in `postcss.config.mjs`.
+- Global stylesheet `app/globals.css` includes `@import "tailwindcss";`.
+- No Tailwind config file is required unless you need custom themes or content settings.
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
