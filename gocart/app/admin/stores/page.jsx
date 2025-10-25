@@ -1,47 +1,70 @@
 'use client'
-import { storesDummyData } from "@/assets/assets"
 import StoreInfo from "@/components/admin/StoreInfo"
 import Loading from "@/components/Loading"
+import { useAuth, useUser } from "@clerk/nextjs"
+import axios from "axios"
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 
 export default function AdminStores() {
 
+    const { user } = useUser();
+    const { getToken } = useAuth();
+
     const [stores, setStores] = useState([])
     const [loading, setLoading] = useState(true)
 
     const fetchStores = async () => {
-        setStores(storesDummyData)
+        try {
+            const token = await getToken();
+            const { data } = await axios.get('/api/admin/stores', {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            setStores(data.stores)
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error.message)
+        }
         setLoading(false)
     }
 
     const toggleIsActive = async (storeId) => {
         // Logic to toggle the status of a store
-
+        try {
+            const token = await getToken();
+            const { data } = await axios.post('/api/admin/toggle-store', { storeId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            await fetchStores()
+            toast.success(data.message)
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error.message)
+        }
     }
 
     useEffect(() => {
-        fetchStores()
-    }, [])
+        if (user) {
+            fetchStores()
+        }
+    }, [user])
 
     return !loading ? (
         <div className="text-slate-500 mb-28">
-            <h1 className="text-2xl">Live <span className="text-slate-800 font-medium">Stores</span></h1>
+            <h1 className="text-2xl">Live <span className="font-medium text-slate-800">Stores</span></h1>
 
             {stores.length ? (
                 <div className="flex flex-col gap-4 mt-4">
                     {stores.map((store) => (
-                        <div key={store.id} className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 flex max-md:flex-col gap-4 md:items-end max-w-4xl" >
+                        <div key={store.id} className="flex max-w-4xl gap-4 p-6 bg-white border rounded-lg shadow-sm border-slate-200 max-md:flex-col md:items-end" >
                             {/* Store Info */}
                             <StoreInfo store={store} />
 
                             {/* Actions */}
-                            <div className="flex items-center gap-3 pt-2 flex-wrap">
+                            <div className="flex flex-wrap items-center gap-3 pt-2">
                                 <p>Active</p>
-                                <label className="relative inline-flex items-center cursor-pointer text-gray-900">
+                                <label className="relative inline-flex items-center text-gray-900 cursor-pointer">
                                     <input type="checkbox" className="sr-only peer" onChange={() => toast.promise(toggleIsActive(store.id), { loading: "Updating data..." })} checked={store.isActive} />
-                                    <div className="w-9 h-5 bg-slate-300 rounded-full peer peer-checked:bg-green-600 transition-colors duration-200"></div>
-                                    <span className="dot absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform duration-200 ease-in-out peer-checked:translate-x-4"></span>
+                                    <div className="h-5 transition-colors duration-200 rounded-full w-9 bg-slate-300 peer peer-checked:bg-green-600"></div>
+                                    <span className="absolute w-3 h-3 transition-transform duration-200 ease-in-out bg-white rounded-full dot left-1 top-1 peer-checked:translate-x-4"></span>
                                 </label>
                             </div>
                         </div>
@@ -50,7 +73,7 @@ export default function AdminStores() {
                 </div>
             ) : (
                 <div className="flex items-center justify-center h-80">
-                    <h1 className="text-3xl text-slate-400 font-medium">No stores Available</h1>
+                    <h1 className="text-3xl font-medium text-slate-400">No stores Available</h1>
                 </div>
             )
             }
