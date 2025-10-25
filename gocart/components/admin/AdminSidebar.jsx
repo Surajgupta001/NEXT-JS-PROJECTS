@@ -19,7 +19,7 @@ const AdminSidebar = () => {
         { name: 'Coupons', href: '/admin/coupons', icon: TicketPercentIcon  },
     ]
 
-    return (
+    return user && (
         <div className="inline-flex flex-col h-full gap-5 border-r border-slate-200 sm:min-w-60">
             <div className="flex flex-col items-center justify-center gap-3 pt-8 max-sm:hidden">
                 <Image className="rounded-full w-14 h-14" src={user.imageUrl} alt="" width={80} height={80} />
