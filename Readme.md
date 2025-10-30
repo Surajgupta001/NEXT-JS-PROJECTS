@@ -211,6 +211,47 @@ QuickCart/
 
 ---
 
+### 🛍️ GoCart - Modern E-commerce (Prisma + Stripe + AI)
+
+GoCart is a production-ready e-commerce app built with the Next.js App Router. It features Clerk authentication, Stripe payments, Prisma with Postgres (Neon), ImageKit media, and an AI-assisted product description generator. Includes a buyer-facing storefront and a seller dashboard with approvals, coupons, orders, and ratings.
+
+#### 🌟 GoCart Highlights
+
+- Clerk auth with buyer/seller roles and admin approvals
+- Stripe Checkout (paid) and Cash-on-Delivery (COD) flows
+- Free shipping for Plus members via Clerk plan gating
+- Prisma + Postgres (Neon) with relational models (orders, items, ratings, coupons)
+- Image storage/optimization via ImageKit
+- AI endpoint to suggest product names/descriptions from images
+- Robust seller dashboard: add products, manage orders, coupons, and store data
+
+#### 🛠️ GoCart Tech Stack
+
+- Frontend: Next.js 15 (App Router), React 19, Tailwind CSS v4
+- Backend: Next.js Route Handlers, Prisma ORM (Postgres via Neon)
+- Auth: Clerk (getAuth(request) usage)
+- Payments: Stripe Checkout + webhook
+- Media: ImageKit (upload + CDN)
+- State/UI: Redux Toolkit, axios, react-hot-toast
+- Jobs: Inngest for background tasks
+
+#### 📚 Docs & Setup
+
+- Full documentation: `gocart/README.md`
+- Environment example: `gocart/.env.example`
+
+#### 🚀 Run GoCart Locally (Windows PowerShell)
+
+```powershell
+cd "c:\Programming\NEXT JS PROJECTS\gocart"
+npm install
+npm run dev
+```
+
+Open <http://localhost:3000>
+
+---
+
 ### 🎬 ReelKit (video-with-ai) - ImageKit Video Uploader
 
 ReelKit is a full-stack video uploader built with Next.js App Router and ImageKit. It lets authenticated users upload videos (and thumbnails) directly to ImageKit and stores metadata in MongoDB. Includes login/register, an upload form, and a home page to list and play videos.
@@ -284,6 +325,7 @@ IMAGEKIT_PRIVATE_KEY=private_xxxxxxxxxxxxxxxxxx
 ```
 
 Notes:
+
 - `NEXT_PUBLIC_URL_ENDPOINT` and `NEXT_PUBLIC_PUBLIC_KEY` are exposed to the client.
 - `IMAGEKIT_PRIVATE_KEY` must remain server-only (used in the auth route handler).
 
@@ -301,9 +343,9 @@ Open <http://localhost:3000>
 
 - Register at `/register`, then login at `/login`.
 - Upload videos at `/upload` (requires auth). This performs:
-   - GET `/api/auth/imagekit-auth` to fetch signed params
-   - Client-side upload to ImageKit using `@imagekit/next` upload
-   - POST `/api/video` to save metadata (title, description, videoUrl, thumbnailUrl)
+  - GET `/api/auth/imagekit-auth` to fetch signed params
+  - Client-side upload to ImageKit using `@imagekit/next` upload
+  - POST `/api/video` to save metadata (title, description, videoUrl, thumbnailUrl)
 - View uploaded videos on `/` with a built-in video player.
 
 #### 🔐 API Endpoints
