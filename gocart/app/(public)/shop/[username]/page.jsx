@@ -5,7 +5,8 @@ import { useEffect, useState } from "react"
 import { MailIcon, MapPinIcon } from "lucide-react"
 import Loading from "@/components/Loading"
 import Image from "next/image"
-import { dummyStoreData, productDummyData } from "@/assets/assets"
+import axios from "axios"
+import toast from "react-hot-toast"
 
 export default function StoreShop() {
 
@@ -15,8 +16,13 @@ export default function StoreShop() {
     const [loading, setLoading] = useState(true)
 
     const fetchStoreData = async () => {
-        setStoreInfo(dummyStoreData)
-        setProducts(productDummyData)
+        try {
+            const { data } = await axios.get(`/api/store/data/?username=${username}`)
+            setStoreInfo(data.store)
+            setProducts(data.store.Product)
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error.message)
+        }
         setLoading(false)
     }
 
@@ -29,25 +35,25 @@ export default function StoreShop() {
 
             {/* Store Info Banner */}
             {storeInfo && (
-                <div className="max-w-7xl mx-auto bg-slate-50 rounded-xl p-6 md:p-10 mt-6 flex flex-col md:flex-row items-center gap-6 shadow-xs">
+                <div className="flex flex-col items-center gap-6 p-6 mx-auto mt-6 shadow-xs max-w-7xl bg-slate-50 rounded-xl md:p-10 md:flex-row">
                     <Image
                         src={storeInfo.logo}
                         alt={storeInfo.name}
-                        className="size-32 sm:size-38 object-cover border-2 border-slate-100 rounded-md"
+                        className="object-cover border-2 rounded-md size-32 sm:size-38 border-slate-100"
                         width={200}
                         height={200}
                     />
                     <div className="text-center md:text-left">
                         <h1 className="text-3xl font-semibold text-slate-800">{storeInfo.name}</h1>
-                        <p className="text-sm text-slate-600 mt-2 max-w-lg">{storeInfo.description}</p>
-                        <div className="text-xs text-slate-500 mt-4 space-y-1"></div>
+                        <p className="max-w-lg mt-2 text-sm text-slate-600">{storeInfo.description}</p>
+                        <div className="mt-4 space-y-1 text-xs text-slate-500"></div>
                         <div className="space-y-2 text-sm text-slate-500">
                             <div className="flex items-center">
-                                <MapPinIcon className="w-4 h-4 text-gray-500 mr-2" />
+                                <MapPinIcon className="w-4 h-4 mr-2 text-gray-500" />
                                 <span>{storeInfo.address}</span>
                             </div>
                             <div className="flex items-center">
-                                <MailIcon className="w-4 h-4 text-gray-500 mr-2" />
+                                <MailIcon className="w-4 h-4 mr-2 text-gray-500" />
                                 <span>{storeInfo.email}</span>
                             </div>
                            
@@ -57,9 +63,9 @@ export default function StoreShop() {
             )}
 
             {/* Products */}
-            <div className=" max-w-7xl mx-auto mb-40">
-                <h1 className="text-2xl mt-12">Shop <span className="text-slate-800 font-medium">Products</span></h1>
-                <div className="mt-5 grid grid-cols-2 sm:flex flex-wrap gap-6 xl:gap-12 mx-auto">
+            <div className="mx-auto mb-40 max-w-7xl">
+                <h1 className="mt-12 text-2xl">Shop <span className="font-medium text-slate-800">Products</span></h1>
+                <div className="grid flex-wrap grid-cols-2 gap-6 mx-auto mt-5 sm:flex xl:gap-12">
                     {products.map((product) => <ProductCard key={product.id} product={product} />)}
                 </div>
             </div>
