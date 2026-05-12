@@ -54,6 +54,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth`}
       >
         <body
+          suppressHydrationWarning
           className="flex flex-col min-h-screen antialiased text-gray-100 bg-linear-to-b from-gray-900 to-gray-950"
         >
           <ConvexClientProvider>

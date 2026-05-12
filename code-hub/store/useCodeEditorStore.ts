@@ -84,9 +84,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
             try {
                 const runtime = LANGUAGE_CONFIG[language].pistonRuntime;
-                const PISTON_URL = "https://emkc.org/api/v2/piston/execute";
-
-                const response = await fetch(PISTON_URL, {
+                const response = await fetch("/api/execute", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -102,9 +100,10 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
                 console.log("data back from piston:", data);
 
-                // handle API-level erros
-                if (data.message) {
-                    set({ error: data.message, executionResult: { code, output: "", error: data.message } });
+                // handle API-level errors or internal proxy fallback errors
+                const errorMessage = data.message || data.error;
+                if (errorMessage && !data.run) {
+                    set({ error: errorMessage, executionResult: { code, output: "", error: errorMessage } });
                     return;
                 }
 
