@@ -35,10 +35,10 @@ export default defineSchema({
         userId: v.string(),
         userName: v.string(), // store user'name for easy access when displaying comments
         content: v.string(), // This will store HTML content
-    }).index('by_snippetId', ['snippetId']),
+    }).index('by_snippet_id', ['snippetId']),
 
     stars: defineTable({
-        userId: v.id('users'),
+        userId: v.string(),
         snippetId: v.id('snippets'),
     })
     .index('by_user_id', ['userId'])
