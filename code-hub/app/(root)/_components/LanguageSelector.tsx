@@ -1,5 +1,4 @@
 'use client';
-
 import { useCodeEditorStore } from "@/store/useCodeEditorStore";
 import { useEffect, useRef, useState } from "react";
 import { LANGUAGE_CONFIG } from "../_constants";
@@ -62,11 +61,9 @@ function LanguageSelector({ hasAccess }: { hasAccess: boolean }) {
                         className="relative z-10 object-contain w-full h-full"
                     />
                 </div>
-
                 <span className="text-gray-200 min-w-[80px] text-left group-hover:text-white transition-colors">
                     {currentLanguageObj.label}
                 </span>
-
                 <ChevronDownIcon className={`size-4 text-gray-400 transition-all duration-300 group-hover:text-gray-300 ${isOpen ? "rotate-180" : ""}`} />
             </motion.button>
             <AnimatePresence>
