@@ -1,0 +1,293 @@
+"use client";
+import { useUser } from "@clerk/nextjs";
+import { usePaginatedQuery, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { api } from "../../convex/_generated/api";
+import NavigationHeader from "@/components/NavigationHeader";
+import ProfileHeader from "./_components/ProfileHeader";
+import ProfileHeaderSkeleton from "./_components/ProfileHeaderSkeleton";
+import { ChevronRight, Clock, Code, ListVideo, Loader2, Star } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
+import StarButton from "@/components/StarButton";
+import CodeBlock from "./_components/CodeBlock";
+import { LANGUAGE_CONFIG } from "../(root)/_constants";
+
+const TABS = [
+    {
+        id: "executions",
+        label: "Code Executions",
+        icon: ListVideo,
+    },
+    {
+        id: "starred",
+        label: "Starred Snippets",
+        icon: Star,
+    },
+];
+
+function ProfilePage() {
+    const { user, isLoaded } = useUser();
+    const router = useRouter();
+    const [activeTab, setActiveTab] = useState<"executions" | "starred">("executions");
+
+    const userStats = useQuery(api.codeExecutions.getUserStats, {
+        userId: user?.id ?? "",
+    });
+
+    const starredSnippets = useQuery(api.snippets.getStarredSnippets);
+
+    const {
+        results: executions,
+        status: executionStatus,
+        isLoading: isLoadingExecutions,
+        loadMore,
+    } = usePaginatedQuery(
+        api.codeExecutions.getUserExecutions,
+        {
+            userId: user?.id ?? "",
+        },
+        { initialNumItems: 5 }
+    );
+
+    const userData = useQuery(api.users.getUser, { userId: user?.id ?? "" });
+
+    const handleLoadMore = () => {
+        if (executionStatus === "CanLoadMore") loadMore(5);
+    };
+
+    if (!user && isLoaded) return router.push("/");
+
+    return (
+        <div className="min-h-screen bg-[#0a0a0f]">
+            <NavigationHeader />
+
+            <div className="px-4 py-12 mx-auto max-w-7xl">
+                {/* Profile Header */}
+
+                {userStats && userData && (
+                    <ProfileHeader userStats={userStats} userData={userData} user={user!} />
+                )}
+
+                {(userStats === undefined || !isLoaded) && <ProfileHeaderSkeleton />}
+
+                {/* Main content */}
+                <div
+                    className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] rounded-3xl shadow-2xl 
+        shadow-black/50 border border-gray-800/50 backdrop-blur-xl overflow-hidden"
+                >
+                    {/* Tabs */}
+                    <div className="border-b border-gray-800/50">
+                        <div className="flex p-4 space-x-1">
+                            {TABS.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id as "executions" | "starred")}
+                                    className={`group flex items-center gap-2 px-6 py-2.5 rounded-lg transition-all duration-200 relative overflow-hidden ${activeTab === tab.id ? "text-blue-400" : "text-gray-400 hover:text-gray-300"
+                                        }`}
+                                >
+                                    {activeTab === tab.id && (
+                                        <motion.div
+                                            layoutId="activeTab"
+                                            className="absolute inset-0 rounded-lg bg-blue-500/10"
+                                            transition={{
+                                                type: "spring",
+                                                bounce: 0.2,
+                                                duration: 0.6,
+                                            }}
+                                        />
+                                    )}
+                                    <tab.icon className="relative z-10 w-4 h-4" />
+                                    <span className="relative z-10 text-sm font-medium">{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Tab content */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="p-6"
+                        >
+                            {/* ACTIVE TAB IS EXECUTIONS: */}
+                            {activeTab === "executions" && (
+                                <div className="space-y-6">
+                                    {executions?.map((execution) => (
+                                        <div
+                                            key={execution._id}
+                                            className="overflow-hidden transition-all duration-300 group rounded-xl hover:border-blue-500/50 hover:shadow-md hover:shadow-blue-500/50"
+                                        >
+                                            <div className="flex items-center justify-between p-4 border bg-black/30 border-gray-800/50 rounded-t-xl">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative">
+                                                        <div className="absolute inset-0 transition-opacity rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 blur opacity-20 group-hover:opacity-30" />
+                                                        <Image
+                                                            src={LANGUAGE_CONFIG[execution.language.toLowerCase()]?.logoPath || `/${execution.language.toLowerCase()}.svg`}
+                                                            alt=""
+                                                            className="relative z-10 object-cover rounded-lg"
+                                                            width={40}
+                                                            height={40}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm font-medium text-white">
+                                                                {execution.language.toUpperCase()}
+                                                            </span>
+                                                            <span className="text-xs text-gray-400">•</span>
+                                                            <span className="text-xs text-gray-400">
+                                                                {new Date(execution._creationTime).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span
+                                                                className={`text-xs px-2 py-0.5 rounded-full ${execution.error
+                                                                    ? "bg-red-500/10 text-red-400"
+                                                                    : "bg-green-500/10 text-green-400"
+                                                                    }`}
+                                                            >
+                                                                {execution.error ? "Error" : "Success"}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-4 border border-t-0 bg-black/20 rounded-b-xl border-gray-800/50">
+                                                <CodeBlock code={execution.code} language={execution.language} />
+
+                                                {(execution.output || execution.error) && (
+                                                    <div className="p-4 mt-4 rounded-lg bg-black/40">
+                                                        <h4 className="mb-2 text-sm font-medium text-gray-400">Output</h4>
+                                                        <pre
+                                                            className={`text-sm ${execution.error ? "text-red-400" : "text-green-400"
+                                                                }`}
+                                                        >
+                                                            {execution.error || execution.output}
+                                                        </pre>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {isLoadingExecutions ? (
+                                        <div className="py-12 text-center">
+                                            <Loader2 className="w-12 h-12 mx-auto mb-4 text-gray-600 animate-spin" />
+                                            <h3 className="mb-2 text-lg font-medium text-gray-400">
+                                                Loading code executions...
+                                            </h3>
+                                        </div>
+                                    ) : (
+                                        executions.length === 0 && (
+                                            <div className="py-12 text-center">
+                                                <Code className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                                                <h3 className="mb-2 text-lg font-medium text-gray-400">
+                                                    No code executions yet
+                                                </h3>
+                                                <p className="text-gray-500">Start coding to see your execution history!</p>
+                                            </div>
+                                        )
+                                    )}
+
+                                    {/* Load More Button */}
+                                    {executionStatus === "CanLoadMore" && (
+                                        <div className="flex justify-center mt-8">
+                                            <button
+                                                onClick={handleLoadMore}
+                                                className="flex items-center gap-2 px-6 py-3 text-blue-400 transition-colors rounded-lg bg-blue-500/10 hover:bg-blue-500/20"
+                                            >
+                                                Load More
+                                                <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ACTIVE TAB IS STARS: */}
+                            {activeTab === "starred" && (
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    {starredSnippets?.map((snippet) => (
+                                        <div key={snippet._id} className="relative group">
+                                            <Link href={`/snippets/${snippet._id}`}>
+                                                <div
+                                                    className="bg-black/20 rounded-xl border border-gray-800/50 hover:border-gray-700/50 
+                          transition-all duration-300 overflow-hidden h-full group-hover:transform
+                        group-hover:scale-[1.02]"
+                                                >
+                                                    <div className="p-6">
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="relative">
+                                                                    <div className="absolute inset-0 transition-opacity rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 blur opacity-20 group-hover:opacity-30" />
+                                                                    <Image
+                                                                        src={LANGUAGE_CONFIG[snippet.language.toLowerCase()]?.logoPath || `/${snippet.language.toLowerCase()}.svg`}
+                                                                        alt={`${snippet.language} logo`}
+                                                                        className="relative z-10"
+                                                                        width={40}
+                                                                        height={40}
+                                                                    />
+                                                                </div>
+                                                                <span className="px-3 py-1 text-sm text-blue-400 rounded-lg bg-blue-500/10">
+                                                                    {snippet.language}
+                                                                </span>
+                                                            </div>
+                                                            <div
+                                                                className="absolute z-10 top-6 right-6"
+                                                                onClick={(e) => e.preventDefault()}
+                                                            >
+                                                                <StarButton snippetId={snippet._id} />
+                                                            </div>
+                                                        </div>
+                                                        <h2 className="mb-3 text-xl font-semibold text-white transition-colors line-clamp-1 group-hover:text-blue-400">
+                                                            {snippet.title}
+                                                        </h2>
+                                                        <div className="flex items-center justify-between text-sm text-gray-400">
+                                                            <div className="flex items-center gap-2">
+                                                                <Clock className="w-4 h-4" />
+                                                                <span>{new Date(snippet._creationTime).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <ChevronRight className="w-4 h-4 transition-transform transform group-hover:translate-x-1" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-6 pb-6">
+                                                        <div className="p-4 overflow-hidden rounded-lg bg-black/30">
+                                                            <pre className="font-mono text-sm text-gray-300 line-clamp-3">
+                                                                {snippet.code}
+                                                            </pre>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        </div>
+                                    ))}
+
+                                    {(!starredSnippets || starredSnippets.length === 0) && (
+                                        <div className="py-12 text-center col-span-full">
+                                            <Star className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                                            <h3 className="mb-2 text-lg font-medium text-gray-400">
+                                                No starred snippets yet
+                                            </h3>
+                                            <p className="text-gray-500">
+                                                Start exploring and star the snippets you find useful!
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </div>
+        </div>
+    );
+}
+export default ProfilePage;
