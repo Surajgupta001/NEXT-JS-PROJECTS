@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Suraj Kumar Gupta" }],
   creator: "Suraj Gupta",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/logo.svg",
   },
 };
 
