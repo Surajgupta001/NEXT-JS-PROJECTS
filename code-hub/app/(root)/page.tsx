@@ -7,7 +7,7 @@ export default function Home() {
         <div className="min-h-screen">
             <div className="p-4 mx-auto max-w-[1800px]">
                 <Header />
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <EditorPanel />
                     <OutputPanel />
                 </div>

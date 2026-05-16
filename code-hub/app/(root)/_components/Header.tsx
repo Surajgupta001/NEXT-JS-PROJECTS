@@ -21,8 +21,8 @@ async function Header() {
     return (
         <div className="relative z-10">
             <div
-                className="flex items-center justify-between bg-[#0a0a0f]/80 backdrop-blur-xl p-6 mb-4 rounded-lg">
-                <div className="flex items-center gap-8">
+                className="flex flex-col lg:flex-row items-center lg:justify-between justify-center bg-[#0a0a0f]/80 backdrop-blur-xl p-4 lg:p-6 mb-4 rounded-lg">
+                <div className="flex items-center justify-between w-full lg:w-auto mb-4 lg:mb-0">
                     <Link href="/" className="relative flex items-center gap-3 group">
                         {/* Logo hover effect */}
                         <div className="absolute transition-all duration-500 rounded-lg opacity-0 -inset-2 bg-linear-to-r from-blue-500/20 to-purple-500/20 group-hover:opacity-100 blur-xl" />
@@ -45,7 +45,7 @@ async function Header() {
                         </Link>
                     </nav>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center flex-wrap gap-4">
                     <div className="flex items-center gap-3">
                         <ThemeSelector />
                         <LanguageSelector hasAccess={Boolean(convexUser?.isPro)} />
