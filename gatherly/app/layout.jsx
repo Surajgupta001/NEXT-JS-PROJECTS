@@ -24,10 +24,7 @@ export default function RootLayout({ children }) {
       className={`${poppins.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body
-        className={`bg-linear-to-br from-gray-950 via-zinc-900 to-stone-950 text-white`}
-        suppressHydrationWarning
-      >
+      <body className={`bg-gradient-to-br from-gray-950 via-zinc-900 to-stone-950 text-white font-sans`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
