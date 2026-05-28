@@ -9,12 +9,16 @@ import { BarLoader } from 'react-spinners';
 import { useStoreUser } from '@/hooks/use-store-user';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { Building, Crown, Plus, Sparkles, Ticket } from "lucide-react";
+import OnboardingModal from './onboarding-modal';
+import { useOnboarding } from '@/hooks/use-onboarding';
 
 function Header() {
 
     const { isLoading } = useStoreUser();
 
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+    const { showOnboarding, handleOnboardingComplete, handleOnboardingSkip } = useOnboarding();
 
     return (
         <>
@@ -82,6 +86,7 @@ function Header() {
                     </div>
                 </div>
                 {/* Mobile Search & Location - Below Header */}
+
                 {/* Loader */}
                 {isLoading && (
                     <div className='absolute bottom-0 left-0 w-full'>
@@ -89,7 +94,13 @@ function Header() {
                     </div>
                 )}
             </nav>
+
             {/* Modals */}
+            <OnboardingModal
+                isOpen={showOnboarding}
+                onClose={handleOnboardingSkip}
+                onComplete={handleOnboardingComplete}
+            />
         </>
     )
 }
