@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from '@clerk/ui/themes'
+import { Toaster } from "sonner";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -51,6 +52,7 @@ export default function RootLayout({ children }) {
                 <footer className="px-6 py-8 mx-auto border-t border-gray-800/50 max-w-7xl">
                   <div className="text-sm text-gray-400">Welcome to Gatherly!</div>
                 </footer>
+                <Toaster position="top-center" richColors />
               </main>
             </ConvexClientProvider>
           </ClerkProvider>

@@ -53,9 +53,9 @@ export default defineSchema({
         locationType: v.union(v.literal("physical"), v.literal("online")),
         venue: v.optional(v.string()),
         address: v.optional(v.string()),
-        city: v.string(),
+        city: v.optional(v.string()),
         state: v.optional(v.string()), // Added state field
-        country: v.string(),
+        country: v.optional(v.string()),
 
         // Capacity & Ticketing
         capacity: v.number(),

@@ -1,4 +1,6 @@
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
 
 export const store = mutation({
     args: {},
@@ -22,7 +24,7 @@ export const store = mutation({
         if (user !== null) {
             // If we've seen this identity before but the name has changed, patch the value.
             if (user.name !== identity.name) {
-                await ctx.db.patch(user._id, { 
+                await ctx.db.patch(user._id, {
                     name: identity.name,
                     updatedAt: Date.now(),
                 });
@@ -59,5 +61,41 @@ export const getCurrentUser = query({
             throw new Error("Authenticated user has no entry in the database. This likely means storeUser was not called after authentication.");
         }
         return user;
+    },
+});
+
+export const completeOnboarding = mutation({
+    args: {
+        location: v.object({
+            city: v.string(),
+            state: v.string(),
+            country: v.string(),
+        }),
+        interests: v.array(v.string()), // min 3 categories
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Unauthenticated call to completeOnboarding");
+        }
+
+        const user = await ctx.db.query("users")
+            .withIndex("by_token", (q) =>
+                q.eq("tokenIdentifier", identity.tokenIdentifier),
+            )
+            .unique();
+
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        await ctx.db.patch(user._id, {
+            location: args.location,
+            interests: args.interests,
+            hasCompletedOnboarding: true,
+            updatedAt: Date.now(),
+        });
+
+        return user._id;
     },
 });
