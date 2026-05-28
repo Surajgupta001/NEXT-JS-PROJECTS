@@ -19,12 +19,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="en"
-      className={`${poppins.variable} h-full antialiased`}
-      suppressHydrationWarning
-    >
-      <body className={`bg-gradient-to-br from-gray-950 via-zinc-900 to-stone-950 text-white font-sans`}>
+      <html
+        lang="en"
+        className={`${poppins.variable} antialiased`}
+        suppressHydrationWarning
+      >
+        <body className={`min-h-screen bg-gradient-to-br from-gray-950 via-zinc-900 to-stone-950 text-white font-sans bg-fixed`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -11,6 +11,7 @@ import { Authenticated, Unauthenticated } from 'convex/react';
 import { Building, Crown, Plus, Sparkles, Ticket } from "lucide-react";
 import OnboardingModal from './onboarding-modal';
 import { useOnboarding } from '@/hooks/use-onboarding';
+import SearchLocationBar from './search-location-bar';
 
 function Header() {
 
@@ -36,7 +37,12 @@ function Header() {
                         />
                         {/* Pro Badge */}
                     </Link>
+
                     {/* Search & Location - Desktop only */}
+                    <div className='justify-center flex-1 hidden md:flex'>
+                        <SearchLocationBar />
+                    </div>
+
                     {/* Right Side Actions */}
                     <div className='flex items-center'>
                         <Button variant={"ghost"} size='sm' onClick={() => setShowUpgradeModal(true)}>
@@ -46,6 +52,7 @@ function Header() {
                             <Link href='explore'>Explore</Link>
                         </Button>
                         <Authenticated>
+                            
                             {/* Create Event Button */}
                             <Button size="sm" asChild className="flex gap-2 mr-4">
                                 <Link href="/create-event">
@@ -85,7 +92,11 @@ function Header() {
                         </Unauthenticated>
                     </div>
                 </div>
+                
                 {/* Mobile Search & Location - Below Header */}
+                <div className='px-3 py-3 border-t md:hidden'>
+                    <SearchLocationBar />
+                </div>
 
                 {/* Loader */}
                 {isLoading && (
