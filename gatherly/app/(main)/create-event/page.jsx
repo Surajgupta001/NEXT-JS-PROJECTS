@@ -223,9 +223,9 @@ function CreateEventPage() {
                                 src={coverImage}
                                 alt="Cover"
                                 className="object-cover w-full h-full"
-                                width={500} // Adjust width as needed
-                                height={500} // Adjust height as needed
-                                priority // Optional: prioritize loading this image
+                                width={500}
+                                height={500}
+                                sizes="320px"
                             />
                         ) : (
                             <span className="text-sm opacity-60">

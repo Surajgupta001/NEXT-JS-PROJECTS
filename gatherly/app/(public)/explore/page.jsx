@@ -2,7 +2,7 @@
 
 import { api } from '@/convex/_generated/api'
 import { useConvexQuery } from '@/hooks/use-convex-query';
-import React, { useRef } from 'react'
+import React, { useMemo } from 'react'
 import { useRouter } from "next/navigation";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
@@ -18,7 +18,10 @@ import { CATEGORIES } from '@/lib/data';
 function ExplorePage() {
 
     const router = useRouter();
-    const plugin = useRef(Autoplay({ delay: 2000, stopOnInteraction: true }));
+    const autoplay = useMemo(
+        () => Autoplay({ delay: 2000, stopOnInteraction: true }),
+        []
+    );
 
     // Fetch current user for location
     const { data: currentUser } = useConvexQuery(api.users.getCurrentUser);
@@ -94,13 +97,13 @@ function ExplorePage() {
             {featuredEvents && featuredEvents.length > 0 && (
                 <div className="mb-16">
                     <Carousel
-                        plugins={[plugin.current]}
+                        plugins={[autoplay]}
                         className="w-full"
-                        onMouseEnter={plugin.current.stop}
-                        onMouseLeave={plugin.current.reset}
+                        onMouseEnter={() => autoplay.stop()}
+                        onMouseLeave={() => autoplay.reset()}
                     >
                         <CarouselContent>
-                            {featuredEvents.map((event) => (
+                            {featuredEvents.map((event, index) => (
                                 <CarouselItem key={event._id}>
                                     <div
                                         className="relative overflow-hidden cursor-pointer h-100 rounded-xl"
@@ -112,7 +115,8 @@ function ExplorePage() {
                                                 alt={event.title}
                                                 fill
                                                 className="object-cover"
-                                                priority
+                                                sizes="100vw"
+                                                preload={index === 0}
                                             />
                                         ) : (
                                             <div

@@ -38,7 +38,7 @@ function Header() {
                             width={900}
                             height={900}
                             className='w-auto h-14 mix-blend-lighten'
-                            priority
+                            sizes='180px'
                         />
 
                         {/* Pro Badge */}

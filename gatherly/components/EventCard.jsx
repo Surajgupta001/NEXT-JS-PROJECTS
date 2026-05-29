@@ -32,6 +32,7 @@ function EventCard({
                                 alt={event.title}
                                 fill
                                 className="object-cover"
+                                sizes="80px"
                             />
                         ) : (
                             <div
@@ -81,7 +82,7 @@ function EventCard({
                         className="object-cover w-full h-full transition-transform group-hover:scale-105"
                         width={500}
                         height={192}
-                        priority
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                 ) : (
                     <div

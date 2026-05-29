@@ -1,4 +1,3 @@
-import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -21,11 +20,12 @@ export const store = mutation({
                 q.eq("tokenIdentifier", identity.tokenIdentifier),
             )
             .unique();
+        const name = identity.name ?? "Anonymous";
         if (user !== null) {
             // If we've seen this identity before but the name has changed, patch the value.
-            if (user.name !== identity.name) {
+            if (user.name !== name) {
                 await ctx.db.patch(user._id, {
-                    name: identity.name,
+                    name,
                     updatedAt: Date.now(),
                 });
             }
@@ -33,7 +33,7 @@ export const store = mutation({
         }
         // If it's a new identity, create a new `User`.
         return await ctx.db.insert("users", {
-            name: identity.name ?? "Anonymous",
+            name,
             tokenIdentifier: identity.tokenIdentifier,
             email: identity.email ?? "",
             imageUrl: identity.pictureUrl,
@@ -46,6 +46,7 @@ export const store = mutation({
 });
 
 export const getCurrentUser = query({
+    args: {},
     handler: async (ctx) => {
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) {
