@@ -60,7 +60,7 @@ function Header() {
                             Pricing
                         </Button>)}
                         <Button variant={"ghost"} size='sm' asChild className={'mr-2'}>
-                            <Link href='explore'>Explore</Link>
+                            <Link href='/explore'>Explore</Link>
                         </Button>
                         <Authenticated>
 

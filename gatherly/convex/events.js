@@ -34,6 +34,9 @@ export const createEvent = mutation({
     handler: async (ctx, args) => {
         try {
             const user = await ctx.runQuery(internal.users.getCurrentUser);
+            if (!user) {
+                throw new Error("User not found");
+            }
 
             // SERVER-SIDE CHECK: Verify event limit for Free users
             if (!args.hasPro && user.freeEventCreated >= 1) {
@@ -104,6 +107,9 @@ export const getEventBySlug = query({
 export const getMyEvents = query({
     handler: async (ctx) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
+        if (!user) {
+            return [];
+        }
 
         const events = await ctx.db
             .query("events")
@@ -122,6 +128,9 @@ export const deleteEvent = mutation({
     },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
+        if (!user) {
+            throw new Error("User not found");
+        }
 
         const event = await ctx.db.get(args.eventId);
         if (!event) {
