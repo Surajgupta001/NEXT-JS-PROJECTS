@@ -16,6 +16,9 @@ export const registerForEvent = mutation({
     },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
+        if (!user) {
+            throw new Error("User not found");
+        }
 
         const event = await ctx.db.get(args.eventId);
         if (!event) {
@@ -82,14 +85,18 @@ export const checkRegistration = query({
 
 // Get user's registrations (tickets)
 export const getMyRegistrations = query({
+    args: {},
     handler: async (ctx) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
+        if (!user) {
+            return [];
+        }
 
         const registrations = await ctx.db
             .query("registrations")
             .withIndex("by_user", (q) => q.eq("userId", user._id))
             .order("desc")
-            .collect();
+            .take(100);
 
         // Fetch event details for each registration
         const registrationsWithEvents = await Promise.all(
@@ -111,6 +118,9 @@ export const cancelRegistration = mutation({
     args: { registrationId: v.id("registrations") },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
+        if (!user) {
+            throw new Error("User not found");
+        }
 
         const registration = await ctx.db.get(args.registrationId);
         if (!registration) {
@@ -148,6 +158,9 @@ export const getEventRegistrations = query({
     args: { eventId: v.id("events") },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
+        if (!user) {
+            throw new Error("User not found");
+        }
 
         const event = await ctx.db.get(args.eventId);
         if (!event) {
@@ -162,7 +175,7 @@ export const getEventRegistrations = query({
         const registrations = await ctx.db
             .query("registrations")
             .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-            .collect();
+            .take(500);
 
         return registrations;
     },
@@ -173,6 +186,9 @@ export const checkInAttendee = mutation({
     args: { qrCode: v.string() },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
+        if (!user) {
+            throw new Error("User not found");
+        }
 
         const registration = await ctx.db
             .query("registrations")

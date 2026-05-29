@@ -42,7 +42,8 @@ export default function Home() {
               width={700}
               height={700}
               className="w-full h-auto"
-              priority
+              preload
+              sizes="(max-width: 1024px) 100vw, 50vw"
             />
           </div>
         </div>

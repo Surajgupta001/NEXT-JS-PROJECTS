@@ -22,19 +22,21 @@ export const getEventDashboard = query({
             throw new Error("You are not authorized to view this dashboard");
         }
 
-        // Get all registrations
-        const registrations = await ctx.db
+        const registrations = ctx.db
             .query("registrations")
-            .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-            .collect();
+            .withIndex("by_event", (q) => q.eq("eventId", args.eventId));
 
-        // Calculate stats
-        const totalRegistrations = registrations.filter(
-            (r) => r.status === "confirmed"
-        ).length;
-        const checkedInCount = registrations.filter(
-            (r) => r.checkedIn && r.status === "confirmed"
-        ).length;
+        let totalRegistrations = 0;
+        let checkedInCount = 0;
+        for await (const registration of registrations) {
+            if (registration.status !== "confirmed") {
+                continue;
+            }
+            totalRegistrations += 1;
+            if (registration.checkedIn) {
+                checkedInCount += 1;
+            }
+        }
         const pendingCount = totalRegistrations - checkedInCount;
 
         // Calculate revenue for paid events

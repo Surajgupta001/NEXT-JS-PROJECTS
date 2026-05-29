@@ -73,6 +73,9 @@ export default defineSchema({
     })
         .index("by_organizer", ["organizerId"])
         .index("by_category", ["category"])
+        .index("by_category_and_start_date", ["category", "startDate"])
+        .index("by_city_and_state_and_start_date", ["city", "state", "startDate"])
+        .index("by_state_and_start_date", ["state", "startDate"])
         .index("by_start_date", ["startDate"])
         .index("by_slug", ["slug"])
         .searchIndex("search_title", { searchField: "title" }),

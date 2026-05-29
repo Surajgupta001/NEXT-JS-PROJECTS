@@ -105,6 +105,7 @@ export const getEventBySlug = query({
 
 // Get events by organizer
 export const getMyEvents = query({
+    args: {},
     handler: async (ctx) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
         if (!user) {
@@ -115,7 +116,7 @@ export const getMyEvents = query({
             .query("events")
             .withIndex("by_organizer", (q) => q.eq("organizerId", user._id))
             .order("desc")
-            .collect();
+            .take(100);
 
         return events;
     },
@@ -143,12 +144,11 @@ export const deleteEvent = mutation({
         }
 
         // Delete all registrations for this event
-        const registrations = await ctx.db
+        const registrations = ctx.db
             .query("registrations")
-            .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-            .collect();
+            .withIndex("by_event", (q) => q.eq("eventId", args.eventId));
 
-        for (const registration of registrations) {
+        for await (const registration of registrations) {
             await ctx.db.delete(registration._id);
         }
 
