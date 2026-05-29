@@ -58,7 +58,7 @@ export const getCurrentUser = query({
             )
             .unique();
         if (!user) {
-            throw new Error("Authenticated user has no entry in the database. This likely means storeUser was not called after authentication.");
+            return null;
         }
         return user;
     },

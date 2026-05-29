@@ -107,6 +107,7 @@ function QRScannerModal({ isOpen, onClose }) {
             }
             setScannerReady(false);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
     return (

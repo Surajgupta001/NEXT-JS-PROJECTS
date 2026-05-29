@@ -22,15 +22,17 @@ export const registerForEvent = mutation({
             throw new Error("Event not found");
         }
 
-        // Check if even is full
+        // Check if event is full
         if (event.registrationCount >= event.capacity) {
             throw new Error("Event is full");
         }
 
-        // Check if user is already registered
+        // Check if user already registered
         const existingRegistration = await ctx.db
             .query("registrations")
-            .withIndex("by_event_user", (q) => q.eq("eventId", args.eventId).eq("userId", user?.id))
+            .withIndex("by_event_user", (q) =>
+                q.eq("eventId", args.eventId).eq("userId", user._id)
+            )
             .unique();
 
         if (existingRegistration) {
@@ -56,23 +58,22 @@ export const registerForEvent = mutation({
         });
 
         return registrationId;
-    }
+    },
 });
 
 // Check if user is registered for an event
 export const checkRegistration = query({
-    args: {
-        eventId: v.id("events"),
-    },
+    args: { eventId: v.id("events") },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
-        if (!user) {
-            return null;
-        }
+
+        if (!user) return null;
 
         const registration = await ctx.db
             .query("registrations")
-            .withIndex("by_event_user", (q) => q.eq("eventId", args.eventId).eq("userId", user._id))
+            .withIndex("by_event_user", (q) =>
+                q.eq("eventId", args.eventId).eq("userId", user._id)
+            )
             .unique();
 
         return registration;
@@ -83,10 +84,6 @@ export const checkRegistration = query({
 export const getMyRegistrations = query({
     handler: async (ctx) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
-
-        if (!user) {
-            return [];
-        }
 
         const registrations = await ctx.db
             .query("registrations")
@@ -100,32 +97,27 @@ export const getMyRegistrations = query({
                 const event = await ctx.db.get(reg.eventId);
                 return {
                     ...reg,
-                    event: event || null,
+                    event,
                 };
             })
         );
+
         return registrationsWithEvents;
     },
 });
 
 // Cancel registration
 export const cancelRegistration = mutation({
-    args: {
-        registrationId: v.id("registrations"),
-    },
+    args: { registrationId: v.id("registrations") },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
-
-        if (!user) {
-            throw new Error("User not found");
-        }
 
         const registration = await ctx.db.get(args.registrationId);
         if (!registration) {
             throw new Error("Registration not found");
         }
 
-        // Check it user owns this registration
+        // Check if user owns this registration
         if (registration.userId !== user._id) {
             throw new Error("You are not authorized to cancel this registration");
         }
@@ -135,67 +127,56 @@ export const cancelRegistration = mutation({
             throw new Error("Event not found");
         }
 
-        // Update registration status to cancelled
+        // Update registration status
         await ctx.db.patch(args.registrationId, {
             status: "cancelled",
         });
 
         // Decrement event registration count
-        await ctx.db.patch(registration.eventId, {
-            registrationCount: Math.max(0, event.registrationCount - 1),
-        });
+        if (event.registrationCount > 0) {
+            await ctx.db.patch(registration.eventId, {
+                registrationCount: event.registrationCount - 1,
+            });
+        }
 
-        return {
-            success: true
-        };
+        return { success: true };
     },
 });
 
 // Get registrations for an event (for organizers)
 export const getEventRegistrations = query({
-    args: {
-        eventId: v.id("events"),
-    },
+    args: { eventId: v.id("events") },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
-
-        if (!user) {
-            return [];
-        }
 
         const event = await ctx.db.get(args.eventId);
         if (!event) {
             throw new Error("Event not found");
         }
 
-        // Check if user is the organizer of the event
+        // Check if user is the organizer
         if (event.organizerId !== user._id) {
-            throw new Error("You are not authorized to view registrations for this event");
+            throw new Error("You are not authorized to view registrations");
         }
 
         const registrations = await ctx.db
             .query("registrations")
             .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
             .collect();
+
         return registrations;
     },
 });
 
 // Check-in attendee with QR code
 export const checkInAttendee = mutation({
-    args: {
-        qrCode: v.string(),
-    },
+    args: { qrCode: v.string() },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(internal.users.getCurrentUser);
 
-        if (!user) {
-            throw new Error("User not found");
-        }
-
         const registration = await ctx.db
             .query("registrations")
-            .withIndex("by_qrCode", (q) => q.eq("qrCode", args.qrCode))
+            .withIndex("by_qr_code", (q) => q.eq("qrCode", args.qrCode))
             .unique();
 
         if (!registration) {
@@ -207,20 +188,21 @@ export const checkInAttendee = mutation({
             throw new Error("Event not found");
         }
 
-        // Check if user is the organizer of the event
+        // Check if user is the organizer
         if (event.organizerId !== user._id) {
-            throw new Error("You are not authorized to check in attendees for this event");
+            throw new Error("You are not authorized to check in attendees");
         }
 
-        // Check if attendee is already checked in
+        // Check if already checked in
         if (registration.checkedIn) {
             return {
                 success: false,
-                message: "Attendee is already checked in",
+                message: "Already checked in",
+                registration,
             };
         }
 
-        // Update registration to checked in
+        // Check in
         await ctx.db.patch(registration._id, {
             checkedIn: true,
             checkedInAt: Date.now(),
@@ -228,12 +210,12 @@ export const checkInAttendee = mutation({
 
         return {
             success: true,
-            message: "Attendee checked in successfully",
+            message: "Check-in successful",
             registration: {
                 ...registration,
                 checkedIn: true,
                 checkedInAt: Date.now(),
-            }
+            },
         };
     },
 });

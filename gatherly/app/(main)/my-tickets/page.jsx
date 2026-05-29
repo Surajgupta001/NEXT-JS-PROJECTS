@@ -49,11 +49,11 @@ function MyTicketsPage() {
 
     const upcomingTickets = registrations?.filter(
         (reg) =>
-            reg.event && reg.event.startDate >= now && reg.status === "confirmed"
+            reg.event && reg.event.endDate >= now && reg.status === "confirmed"
     );
     const pastTickets = registrations?.filter(
         (reg) =>
-            reg.event && (reg.event.startDate < now || reg.status === "cancelled")
+            reg.event && (reg.event.endDate < now || reg.status === "cancelled")
     );
 
     return (
