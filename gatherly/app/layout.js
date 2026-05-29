@@ -1,11 +1,11 @@
-import { Poppins } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ConvexClientProvider } from "@/components/convex-client-provider";
 import Header from "@/components/Header";
-import { ConvexClientProvider } from "./ConvexClientProvider";
+import { ThemeProvider } from "@/components/theme-provider";
 import { ClerkProvider } from "@clerk/nextjs";
-import { shadcn } from '@clerk/ui/themes'
+import { shadcn } from '@clerk/ui/themes';
+import { Poppins } from "next/font/google";
 import { Toaster } from "sonner";
+import "./globals.css";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <body
-        className={`bg-linear-to-br from-gray-950 via-zinc-900 to-stone-950 text-white`}
+        className={`min-h-screen bg-linear-to-br from-gray-950 via-zinc-900 to-stone-950 text-white font-sans bg-fixed`}
         suppressHydrationWarning
       >
         <ThemeProvider
@@ -52,7 +52,7 @@ export default function RootLayout({ children }) {
                 <footer className="px-6 py-8 mx-auto border-t border-gray-800/50 max-w-7xl">
                   <div className="text-sm text-gray-400">Welcome to Gatherly!</div>
                 </footer>
-                <Toaster position="top-center" richColors />
+                <Toaster />
               </main>
             </ConvexClientProvider>
           </ClerkProvider>

@@ -670,7 +670,7 @@ export const run = internalMutation({
                     country: "India",
                 },
                 interests: ["tech", "music", "business"],
-                freeEventsCreated: 0,
+                freeEventCreated: 0,
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
             });
