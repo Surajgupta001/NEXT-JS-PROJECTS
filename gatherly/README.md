@@ -9,6 +9,15 @@ Gatherly is a next-generation, production-ready SaaS event management and ticket
 
 ---
 
+## 🔗 Live Demo & Preview
+
+🚀 **Live Deployment URL**: [https://gatherly-saas.vercel.app/](https://gatherly-saas.vercel.app/)
+
+### Platform Preview
+![Gatherly Platform Preview](public/Website.png)
+
+---
+
 ## 📖 Table of Contents
 
 1. [Project Overview](#-project-overview)
@@ -33,15 +42,6 @@ Gatherly is a next-generation, production-ready SaaS event management and ticket
 20. [Contributing](#-contributing)
 21. [License](#-license)
 22. [Author](#-author)
-
----
-
-## 🔗 Live Demo & Preview
-
-🚀 **Live Deployment URL**: [https://gatherly-saas.vercel.app/](https://gatherly-saas.vercel.app/)
-
-### Platform Preview
-![Gatherly Platform Preview](public/Website.png)
 
 ---
 
