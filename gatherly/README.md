@@ -36,6 +36,15 @@ Gatherly is a next-generation, production-ready SaaS event management and ticket
 
 ---
 
+## 🔗 Live Demo & Preview
+
+🚀 **Live Deployment URL**: [https://gatherly-saas.vercel.app/](https://gatherly-saas.vercel.app/)
+
+### Platform Preview
+![Gatherly Platform Preview](public/Website.png)
+
+---
+
 ## 🌟 Project Overview
 
 ### What is Gatherly?
@@ -481,12 +490,8 @@ GROQ_API_KEY=your_groq_api_key
 
 ## 📸 Screenshots
 
-> [!NOTE]
-> *Add your high-definition screenshots or interactive GIFs demonstrating the dashboard, landing page, and QR ticket system here to showcase your portfolio.*
-
-| Dynamic Landing Page | Organizer Dashboard & Scanner |
-| :---: | :---: |
-| ![Landing Page Placeholder](https://placehold.co/600x400/1e293b/ffffff?text=Landing+Page+Aesthetics) | ![Dashboard Scanner Placeholder](https://placehold.co/600x400/1e293b/ffffff?text=Organizer+Scanner+View) |
+### Gatherly Platform Landing Page & Dashboard
+![Gatherly Platform Landing Page](public/Website.png)
 
 ---
 

@@ -128,3 +128,8 @@
     @apply font-sans;
   }
 }
+
+/* Remove Scrollbars */
+::-webkit-scrollbar {
+  display: none;
+}
