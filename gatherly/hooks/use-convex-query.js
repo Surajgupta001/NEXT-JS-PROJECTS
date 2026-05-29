@@ -27,7 +27,7 @@ export const useConvexQuery = (query, ...args) => {
 
     return {
         data,
-        loading,
+        isLoading: loading,
         error,
     }
 };
@@ -58,7 +58,7 @@ export const useConvexMutation = (mutation) => {
 
     return {
         data,
-        loading,
+        isLoading: loading,
         error,
         mutate,
     };
