@@ -30,7 +30,7 @@ Welcome to my Next.js projects repository! This collection showcases various app
 
 ## 📁 Projects in this Repository
 
-### � Blog App - Content Management System
+### 📝 Blog App - Content Management System
 
 **Blog App** is a modern, full-featured blogging platform built with Next.js 14. It provides a complete content management system with both public blog viewing and admin management capabilities.
 
@@ -116,7 +116,7 @@ blog-app/
 
 ---
 
-### �🛒 QuickCart - E-commerce Platform
+### 🛒 QuickCart - E-commerce Platform
 
 **QuickCart** is a modern, full-featured e-commerce application built with Next.js 15 and the latest web technologies. It provides a complete online shopping experience with advanced features for both customers and sellers.
 
@@ -361,6 +361,151 @@ Open <http://localhost:3000>
 - PostCSS plugin is configured in `postcss.config.mjs`.
 - Global stylesheet `app/globals.css` includes `@import "tailwindcss";`.
 - No Tailwind config file is required unless you need custom themes or content settings.
+
+---
+
+### 🎟️ Gatherly - SaaS Event Management & Ticketing Platform
+
+**Gatherly** is a next-generation, production-ready SaaS event management and ticketing platform. It empowers organizers to seamlessly create, manage, promote, and monetize events, while providing attendees with a delightful experience to discover events, register, and receive digital tickets with QR codes for fast, real-time venue check-in. Incorporating advanced AI capabilities, Gatherly elevates event planning by automating title, description, category, and capacity recommendations.
+
+#### 🚀 Live Demo & Preview
+
+- **Live Deployment**: [https://gatherly-saas.vercel.app/](https://gatherly-saas.vercel.app/)
+
+#### 🌟 Gatherly Features
+
+- **Event Management (Free vs. Pro)**: Free tier includes 1 active event with standard options. Pro tier unlocks unlimited events, custom premium themes, advanced organizer dashboards, and AI assistance.
+- **AI-Powered Creator**: Leverages Generative AI to suggest titles, rich descriptions, categories, and capacities based on minimal user prompts.
+- **Seamless Ticketing**: Real-time SVG QR code ticket generation for attendees (`/my-tickets`).
+- **Fast Venue Check-In**: In-browser camera QR code scanner for organizers with a manual input fallback.
+- **Robust Real-Time Backend**: Built on Convex for real-time reactivity, absolute synchronization, and zero cold starts.
+
+#### 🛠️ Gatherly Tech Stack
+
+- **Frontend**: Next.js 16.2 (App Router), React 19.0, Tailwind CSS 4.0
+- **Database & Backend**: Convex Serverless (ACID-compliant, WebSocket-based real-time sync)
+- **Authentication**: Clerk (JWT-secured session integration)
+- **AI Engine**: Google Gemini / Groq LLM API
+- **QR Operations**: `react-qr-code` & `html5-qrcode`
+
+#### 📂 Gatherly Structure
+
+```text
+gatherly/
+├── app/                      # Next.js App Router root
+│   ├── (auth)/               # Clerk Authentication Layouts
+│   ├── (main)/               # Core Application pages (protected)
+│   │   ├── create-event/     # Event Creator Page & AI Components
+│   │   ├── my-events/        # Organizers Dashboard & QR Scanner
+│   │   └── my-tickets/       # User Digital Tickets wallets
+│   ├── (public)/             # Public pages (landing, explore, event details)
+│   └── layout.js             # Global Layout with Providers
+├── components/               # Shareable UI components
+├── convex/                   # Convex Backend code & endpoints
+├── hooks/                    # Reusable custom React hooks
+└── lib/                      # Helper libraries and static assets
+```
+
+#### 🚀 Getting Started with Gatherly
+
+1. **Navigate to the project directory**
+   ```powershell
+   cd "c:\Programming\NEXT JS PROJECTS\gatherly"
+   ```
+
+2. **Install dependencies**
+   ```bash
+   bun install # or npm install
+   ```
+
+3. **Set up local environment variables**
+   Create a `.env.local` file:
+   ```env
+   CONVEX_DEPLOYMENT=your_convex_deployment_id
+   NEXT_PUBLIC_CONVEX_URL=https://your_project.convex.cloud
+   NEXT_PUBLIC_CONVEX_SITE_URL=https://your_project.convex.site
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+   CLERK_SECRET_KEY=sk_test_...
+   GROQ_API_KEY=your_groq_api_key
+   ```
+
+4. **Initialize Convex Backend**
+   ```bash
+   npx convex dev
+   ```
+
+5. **Run the development server**
+   ```bash
+   bun run dev # or npm run dev
+   ```
+
+---
+
+### 💻 CodeHub - Interactive Code Editor & Developer Platform
+
+**CodeHub** is a powerful, interactive web-based code editor and snippet-sharing platform. It empowers developers to write, execute, and share code snippets in multiple programming languages directly from their browser. With a sleek UI, robust real-time backend syncing, and a seamlessly integrated Pro-tier billing system, CodeHub serves as a premium playground for modern developers.
+
+#### 🚀 Live Demo & Preview
+
+- **Live Deployment**: [https://codehub-one-liart.vercel.app/](https://codehub-one-liart.vercel.app/)
+
+#### 🌟 CodeHub Features
+
+- **Coding Environment**: Feature-rich Monaco Editor (powering VS Code) with syntax highlighting for multiple languages (JavaScript, Python, C++, etc.).
+- **Safe Code Execution**: Streamlined sandbox execution returning stdout and stderr back to a custom interactive terminal.
+- **Real-Time Synchronization**: Instantly saves and synchronizes snippets across user devices using Convex database functions.
+- **Pro Tier Billing**: Stripe payment integration to upgrade accounts and unlock premium compiler features.
+- **Sleek UI/UX**: Fluid animations powered by Framer Motion and fully responsive layouts.
+
+#### 🛠️ CodeHub Tech Stack
+
+- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS, Framer Motion, Monaco Editor (`@monaco-editor/react`), Zustand
+- **Database & Backend**: Convex (Real-time serverless backend functions & database)
+- **Authentication**: Clerk (Secure User Session Management)
+- **Billing**: Stripe (via Clerk billing webhooks synced to Convex)
+
+#### 📂 CodeHub Structure
+
+```text
+code-hub/
+├── app/                  # Next.js App Router (workspace, pricing, profiles)
+├── components/           # Reusable UI components (Modals, Headers, Buttons)
+├── convex/               # Convex Backend schemas, user mutations, snippet APIs
+├── public/               # Static assets & language icons
+├── store/                # Zustand global state (Editor states & terminal logs)
+└── types/                # TypeScript interfaces and type definitions
+```
+
+#### 🚀 Getting Started with CodeHub
+
+1. **Navigate to the project directory**
+   ```powershell
+   cd "c:\Programming\NEXT JS PROJECTS\code-hub"
+   ```
+
+2. **Install dependencies**
+   ```bash
+   bun install # or npm install
+   ```
+
+3. **Set up local environment variables**
+   Create a `.env` file:
+   ```env
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+   CLERK_SECRET_KEY=sk_test_...
+   CONVEX_DEPLOYMENT=dev:...
+   NEXT_PUBLIC_CONVEX_URL=https://...
+   ```
+
+4. **Start the Convex backend environment**
+   ```bash
+   bunx convex dev
+   ```
+
+5. **Run the Next.js development server**
+   ```bash
+   bun run dev # or npm run dev
+   ```
 
 ---
 
