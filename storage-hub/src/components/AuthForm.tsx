@@ -3,13 +3,14 @@
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { createAccount } from "@/lib/actions/user.actions";
+import OTPModal from "./OTPModal";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 type FormType = "sign-in" | "sign-up"
 
@@ -140,6 +141,10 @@ function AuthForm({ type }: { type: FormType }) {
                     </div>
                 </form>
             </Form>
+            {/* OTP Verification */}
+            {accountId && (
+                <OTPModal accountId={accountId} email={form.getValues("email")} />
+            )}
         </>
     );
 }
