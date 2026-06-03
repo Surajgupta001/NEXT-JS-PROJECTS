@@ -3,14 +3,19 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { verifySecret, sendEmailOTP } from "@/lib/actions/user.actions";
 import { useRouter } from "next/navigation";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
-import { sendEmailOTP, verifySecret } from "@/lib/actions/user.actions";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
 
-const OtpModal = ({ accountId, email }: { accountId: string; email: string }) => {
+const OtpModal = ({
+    accountId,
+    email,
+}: {
+    accountId: string;
+    email: string;
+}) => {
     const router = useRouter();
-
     const [isOpen, setIsOpen] = useState(true);
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -19,14 +24,16 @@ const OtpModal = ({ accountId, email }: { accountId: string; email: string }) =>
         e.preventDefault();
         setIsLoading(true);
 
+        console.log({ accountId, password });
+
         try {
             const sessionId = await verifySecret({ accountId, password });
 
-            if (sessionId) {
-                router.push('/')
-            }
+            console.log({ sessionId });
+
+            if (sessionId) router.push("/");
         } catch (error) {
-            console.log("OTP verification failed:", error);
+            console.log("Failed to verify OTP", error);
         }
 
         setIsLoading(false);
