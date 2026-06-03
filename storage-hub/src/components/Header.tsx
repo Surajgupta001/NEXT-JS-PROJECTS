@@ -2,6 +2,8 @@ import Image from 'next/image';
 import React from 'react'
 import Search from './Search';
 import FileUploader from './FileUploader';
+import { Button } from './ui/button';
+import { signOutUser } from '@/lib/actions/user.actions';
 
 function Header() {
     return (
@@ -9,8 +11,11 @@ function Header() {
             <Search />
             <div className='header-wrapper'>
                 <FileUploader />
-                <form>
-                    <button type='submit' className='sign-out-button'>
+                <form action={async () => {
+                    'use server';
+                    await signOutUser();
+                }}>
+                    <Button type='submit' className='sign-out-button'>
                         <Image
                             src='/assets/icons/logout.svg'
                             alt='logo'
@@ -18,7 +23,7 @@ function Header() {
                             height={24}
                             className='w-6'
                         />
-                    </button>
+                    </Button>
                 </form>
             </div>
         </header>

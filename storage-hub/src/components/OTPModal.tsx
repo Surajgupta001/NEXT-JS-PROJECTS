@@ -8,13 +8,7 @@ import { useRouter } from "next/navigation";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
 
-const OtpModal = ({
-    accountId,
-    email,
-}: {
-    accountId: string;
-    email: string;
-}) => {
+const OTPModal = ({ accountId, email }: { accountId: string; email: string }) => {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(true);
     const [password, setPassword] = useState("");
@@ -112,4 +106,4 @@ const OtpModal = ({
     );
 };
 
-export default OtpModal;
+export default OTPModal;
