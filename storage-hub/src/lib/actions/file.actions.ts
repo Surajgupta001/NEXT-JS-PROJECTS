@@ -3,9 +3,10 @@
 import { createAdminClient } from "../appwrite";
 import { InputFile } from "node-appwrite/file";
 import { appwriteConfig } from "../appwrite/config";
-import { ID } from "node-appwrite";
+import { ID, Models, Query } from "node-appwrite";
 import { constructFileUrl, getFileType, parseStringify } from "../utils";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "./user.actions";
 
 const handleError = (error: unknown, message: string) => {
     console.log(message, error);
@@ -49,11 +50,158 @@ export const uploadFiles = async ({ file, ownerId, accountId, path }: UploadFile
                 );
                 return handleError(error, "Failed creating file document");
             });
-        
+
         revalidatePath(path);
 
         return parseStringify(newFile);
     } catch (error) {
         handleError(error, "Failed uploading file");
+    }
+};
+
+const createQueries = (currentUser: Models.Document & { email: string }) => {
+    const queries = [
+        Query.or([
+            Query.equal("owner", [currentUser.$id]),
+            Query.contains("users", [currentUser.email]),
+        ]),
+    ];
+
+    // TODO: Later implement search and sort queries here based on the parameters passed to the getFiles function
+
+    return queries;
+};
+
+export const getFiles = async () => {
+    const { databases } = await createAdminClient();
+
+    try {
+        const currentUser = await getCurrentUser();
+
+        if (!currentUser) {
+            throw new Error("User not authenticated");
+        }
+
+        const queries = createQueries(currentUser);
+
+        // console.log({ currentUser, queries });
+
+        const files = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.filesCollectionId,
+            queries
+        );
+
+        // Populate owner info for each file
+        const ownerIds = Array.from(
+            new Set(
+                files.documents
+                    .map(file => typeof file.owner === "string" ? file.owner : null)
+                    .filter(Boolean) as string[]
+            )
+        );
+
+        const usersMap = new Map();
+        if (ownerIds.length > 0) {
+            const usersResult = await databases.listDocuments(
+                appwriteConfig.databaseId,
+                appwriteConfig.userCollectionId,
+                [Query.equal("$id", ownerIds)]
+            );
+            usersResult.documents.forEach(user => {
+                usersMap.set(user.$id, user);
+            });
+        }
+
+        const populatedDocuments = files.documents.map(file => {
+            if (typeof file.owner === "string") {
+                const user = usersMap.get(file.owner);
+                return {
+                    ...file,
+                    owner: user ? {
+                        fullName: user.fullName,
+                        email: user.email,
+                        avatar: user.avatar,
+                        accountId: user.accountId
+                    } : {
+                        fullName: "Unknown",
+                        email: "",
+                        avatar: "",
+                        accountId: ""
+                    }
+                };
+            }
+            return file;
+        });
+
+        files.documents = populatedDocuments;
+
+        // console.log({ files });
+        return parseStringify(files);
+    } catch (error) {
+        handleError(error, "Failed fetching files");
+    }
+};
+
+export const renameFile = async ({ fileId, name, extension, path }: RenameFileProps) => {
+    const { databases } = await createAdminClient();
+
+    try {
+
+        const newName = `${name}.${extension}`;
+        const updatedFile = await databases.updateDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.filesCollectionId,
+            fileId,
+            {
+                name: newName,
+            },
+        );
+        revalidatePath(path);
+
+        return parseStringify(updatedFile);
+    } catch (error) {
+        handleError(error, "Failed renaming file");
+    }
+};
+
+export const updateFileUsers = async ({ fileId, emails, path }: UpdateFileUsersProps) => {
+    const { databases } = await createAdminClient();
+
+    try {
+        const updatedFile = await databases.updateDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.filesCollectionId,
+            fileId,
+            {
+                users: emails,
+            },
+        );
+
+        revalidatePath(path);
+        return parseStringify(updatedFile);
+    } catch (error) {
+        handleError(error, "Failed to share file");
+    }
+};
+
+export const deleteFile = async ({ fileId, bucketFileId, path }: DeleteFileProps) => {
+    const { databases, storage } = await createAdminClient();
+
+    try {
+        const deletedFile = await databases.deleteDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.filesCollectionId,
+            fileId,
+        );
+
+        if (deletedFile) {
+            await storage.deleteFile(appwriteConfig.bucketId, bucketFileId);
+        }
+
+        revalidatePath(path);
+        return parseStringify({ status: "success" });
+    } catch (error) {
+        handleError(error, "Failed to delete file");
     }
 };

@@ -1,79 +1,100 @@
-declare type FileType = "document" | "image" | "video" | "audio" | "other";
+import { Models } from "node-appwrite";
 
-declare interface ActionType {
-    label: string;
-    icon: string;
-    value: string;
-};
+declare global {
+    type FileType = "document" | "image" | "video" | "audio" | "other";
 
-declare interface SearchParamProps {
-    params?: Promise<SegmentParams>;
-    searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
-};
+    interface ActionType {
+        label: string;
+        icon: string;
+        value: string;
+    }
 
-declare interface UploadFileProps {
-    file: File;
-    ownerId: string;
-    accountId: string;
-    path: string;
-};
+    interface SearchParamProps {
+        params?: Promise<SegmentParams>;
+        searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+    }
 
-declare interface GetFilesProps {
-    types: FileType[];
-    searchText?: string;
-    sort?: string;
-    limit?: number;
-};
+    interface UploadFileProps {
+        file: File;
+        ownerId: string;
+        accountId: string;
+        path: string;
+    }
 
-declare interface RenameFileProps {
-    fileId: string;
-    name: string;
-    extension: string;
-    path: string;
-};
+    interface GetFilesProps {
+        types: FileType[];
+        searchText?: string;
+        sort?: string;
+        limit?: number;
+    }
 
-declare interface UpdateFileUsersProps {
-    fileId: string;
-    emails: string[];
-    path: string;
-};
+    interface RenameFileProps {
+        fileId: string;
+        name: string;
+        extension: string;
+        path: string;
+    }
 
-declare interface DeleteFileProps {
-    fileId: string;
-    bucketFileId: string;
-    path: string;
-};
+    interface UpdateFileUsersProps {
+        fileId: string;
+        emails: string[];
+        path: string;
+    }
 
-declare interface FileUploaderProps {
-    ownerId: string;
-    accountId: string;
-    className?: string;
-};
+    interface DeleteFileProps {
+        fileId: string;
+        bucketFileId: string;
+        path: string;
+    }
 
-declare interface MobileNavigationProps {
-    ownerId: string;
-    accountId: string;
-    fullName: string;
-    avatar: string;
-    email: string;
-};
+    interface FileUploaderProps {
+        ownerId: string;
+        accountId: string;
+        className?: string;
+    }
 
-declare interface SidebarProps {
-    fullName: string;
-    avatar: string;
-    email: string;
-};
+    interface MobileNavigationProps {
+        ownerId: string;
+        accountId: string;
+        fullName: string;
+        avatar: string;
+        email: string;
+    }
 
-declare interface ThumbnailProps {
-    type: string;
-    extension: string;
-    url: string;
-    className?: string;
-    imageClassName?: string;
-};
+    interface SidebarProps {
+        fullName: string;
+        avatar: string;
+        email: string;
+    }
 
-declare interface ShareInputProps {
-    file: Models.Document;
-    onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onRemove: (email: string) => void;
-};
+    interface ThumbnailProps {
+        type: string;
+        extension: string;
+        url: string;
+        className?: string;
+        imageClassName?: string;
+    }
+
+    interface ShareInputProps {
+        file: FileDocument;
+        onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+        onRemove: (email: string) => void;
+    }
+
+    interface FileDocument extends Models.Document {
+        type: string;
+        name: string;
+        url: string;
+        extension: string;
+        size: number;
+        owner: {
+            fullName: string;
+            email: string;
+            avatar: string;
+            accountId: string;
+        };
+        accountId: string;
+        users: string[];
+        bucketFileId: string;
+    }
+}
