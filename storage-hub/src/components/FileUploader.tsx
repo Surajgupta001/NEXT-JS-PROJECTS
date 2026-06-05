@@ -24,21 +24,24 @@ function FileUploader({ ownerId, accountId, className }: Props) {
     const path = usePathname();
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
-        setFiles(acceptedFiles);
+        const validFiles = acceptedFiles.filter((file) => {
+            if (file.size > MAX_FILE_SIZE) {
+                toast.error("File too large", {
+                    description: (
+                        <p className="body-2">
+                            <span className="font-semibold">{file.name}</span> is too large. Max file size is 50MB.
+                        </p>
+                    ),
+                });
+                return false;
+            }
+            return true;
+        });
 
-        const uploadPromises = acceptedFiles.map(
+        setFiles((prevFiles) => [...prevFiles, ...validFiles]);
+
+        const uploadPromises = validFiles.map(
             async (file) => {
-                if (file.size > MAX_FILE_SIZE) {
-                    setFiles((prevFiles) => prevFiles.filter((f) => f.name !== file.name));
-                    return toast.error("File too large", {
-                        description: (
-                            <p className="body-2">
-                                <span className="font-semibold">{file.name}</span> is too large. Max file size is 50MB.
-                            </p>
-                        ),
-                    });
-                }
-
                 return uploadFiles({ file, ownerId, accountId, path })
                     .then((uploadedFile) => {
                         if (uploadedFile) {
@@ -87,20 +90,23 @@ function FileUploader({ ownerId, accountId, className }: Props) {
                         const { type, extension } = getFileType(file.name);
                         return (
                             <li key={`${file.name}-${index}`} className="uploader-preview-item">
-                                <div className='flex items-center gap-3'>
+                                <div className='flex items-center gap-3 flex-1 min-w-0'>
                                     <Thumbnail
                                         type={type}
                                         extension={extension}
                                         url={convertFileToUrl(file)}
                                     />
-                                    <div className='preview-item-name'>
-                                        {file.name}
-                                        <Image
-                                            src="/assets/icons/file-loader.gif"
-                                            alt="Loading"
-                                            width={80}
-                                            height={26}
-                                        />
+                                    <div className='flex flex-col flex-1 min-w-0'>
+                                        <div className='flex items-center gap-2'>
+                                            <p className='preview-item-name !mb-0'>{file.name}</p>
+                                            <Image
+                                                src="/assets/icons/file-loader.gif"
+                                                alt="Loading"
+                                                width={80}
+                                                height={26}
+                                                className="shrink-0"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 <Image
@@ -108,6 +114,7 @@ function FileUploader({ ownerId, accountId, className }: Props) {
                                     width={24}
                                     height={24}
                                     alt="Remove"
+                                    className="cursor-pointer"
                                     onClick={(e) => handleRemoveFile(e, file.name)}
                                 />
                             </li>
