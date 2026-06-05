@@ -3,7 +3,7 @@
 import { createAdminClient, createSessionClient } from "@/lib/appwrite";
 import { appwriteConfig } from "@/lib/appwrite/config";
 import { parseStringify } from "@/lib/utils";
-import { ID, Query } from "appwrite";
+import { ID, Query } from "node-appwrite";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { avatarPlaceholderUrl } from "../../../constants";
