@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Card from '@/components/Card';
 import Sort from '@/components/Sort';
 import { getFiles } from '@/lib/actions/file.actions';

@@ -1,9 +1,42 @@
-import React from 'react'
+'use client';
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { sortTypes } from '../../constants';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 function Sort() {
+
+    const router = useRouter();
+    const path = usePathname();
+    const searchParams = useSearchParams();
+
+    const handleSort = (value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('sort', value);
+        router.push(`${path}?${params.toString()}`);
+    };
+
     return (
-        <div>Sort</div>
-    )
+        <Select
+            onValueChange={handleSort}
+            defaultValue={sortTypes[0].value}
+        >
+            <SelectTrigger className="sort-select">
+                <SelectValue placeholder={sortTypes[0].value} />
+            </SelectTrigger>
+            <SelectContent className="sort-select-content">
+                {sortTypes.map((sort) => (
+                    <SelectItem
+                        key={sort.label}
+                        className="shad-select-item"
+                        value={sort.value}
+                    >
+                        {sort.label}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
 }
 
 export default Sort
