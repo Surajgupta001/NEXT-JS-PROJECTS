@@ -11,12 +11,18 @@ import { useDebounce } from 'use-debounce';
 
 function Search() {
 
-    const [query, setQuery] = useState("");
+    const searchParams = useSearchParams();
+    const searchQuery = searchParams.get("query") || '';
+
+    const [query, setQuery] = useState(searchQuery);
     const [results, setResults] = useState<FileDocument[]>([]);
     const [open, setOpen] = useState(false);
 
-    const searchParams = useSearchParams();
-    const searchQuery = searchParams.get("query") || '';
+    const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+    if (searchQuery !== prevSearchQuery) {
+        setQuery(searchQuery);
+        setPrevSearchQuery(searchQuery);
+    }
 
     const router = useRouter();
     const path = usePathname();
@@ -38,13 +44,7 @@ function Search() {
         };
 
         fetchFiles();
-    }, [debounceQuery]);
-
-    useEffect(() => {
-        if (!searchQuery) {
-            setQuery("");
-        }
-    }, [searchQuery]);
+    }, [debounceQuery, path, router, searchParams]);
 
     const handleClickItem = (file: FileDocument) => {
         setOpen(false);

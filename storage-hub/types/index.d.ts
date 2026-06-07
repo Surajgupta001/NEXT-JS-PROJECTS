@@ -97,4 +97,19 @@ declare global {
         users: string[];
         bucketFileId: string;
     }
+
+    interface SpaceItem {
+        size: number;
+        latestDate: string;
+    }
+
+    interface TotalSpace {
+        image: SpaceItem;
+        document: SpaceItem;
+        video: SpaceItem;
+        audio: SpaceItem;
+        other: SpaceItem;
+        used: number;
+        all: number;
+    }
 }
