@@ -138,7 +138,7 @@ function FileUploader({ className }: Props) {
                         const { type, extension } = getFileType(file.name);
                         return (
                             <li key={id} className="uploader-preview-item">
-                                <div className='flex items-center gap-3 flex-1 min-w-0'>
+                                <div className='flex items-center flex-1 min-w-0 gap-3'>
                                     <Thumbnail
                                         type={type}
                                         extension={extension}
@@ -146,7 +146,7 @@ function FileUploader({ className }: Props) {
                                     />
                                     <div className='flex flex-col flex-1 min-w-0'>
                                         <div className='flex items-center gap-2'>
-                                            <p className='preview-item-name !mb-0'>{file.name}</p>
+                                            <p className='mb-0 preview-item-name'>{file.name}</p>
                                             <Image
                                                 src="/assets/icons/file-loader.gif"
                                                 alt="Loading"
