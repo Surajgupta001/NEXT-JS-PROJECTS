@@ -11,11 +11,14 @@ interface Props {
 }
 
 function Header({ userId, accountId }: Props) {
+    void userId;
+    void accountId;
+
     return (
         <header className='header'>
             <Search />
             <div className='header-wrapper'>
-                <FileUploader ownerId={userId} accountId={accountId} />
+                <FileUploader />
                 <form action={async () => {
                     'use server';
                     await signOutUser();

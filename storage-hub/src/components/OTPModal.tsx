@@ -13,28 +13,32 @@ const OTPModal = ({ accountId, email }: { accountId: string; email: string }) =>
     const [isOpen, setIsOpen] = useState(true);
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         setIsLoading(true);
-
-        console.log({ accountId, password });
+        setErrorMessage("");
 
         try {
             const sessionId = await verifySecret({ accountId, password });
 
-            console.log({ sessionId });
-
             if (sessionId) router.push("/");
-        } catch (error) {
-            console.log("Failed to verify OTP", error);
+        } catch {
+            setErrorMessage("Invalid or expired OTP. Please try again.");
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
     const handleResendOtp = async () => {
-        await sendEmailOTP({ email });
+        setErrorMessage("");
+
+        try {
+            await sendEmailOTP({ email });
+        } catch {
+            setErrorMessage("Could not resend OTP. Please try again.");
+        }
     };
 
     return (
@@ -69,12 +73,19 @@ const OTPModal = ({ accountId, email }: { accountId: string; email: string }) =>
                     </InputOTPGroup>
                 </InputOTP>
 
+                {errorMessage && (
+                    <p className="text-center error-message" aria-live="polite">
+                        {errorMessage}
+                    </p>
+                )}
+
                 <AlertDialogFooter>
                     <div className="flex flex-col w-full gap-4">
                         <AlertDialogAction
                             onClick={handleSubmit}
                             className="h-12 shad-submit-btn"
                             type="button"
+                            disabled={isLoading || password.length !== 6}
                         >
                             Submit
                             {isLoading && (

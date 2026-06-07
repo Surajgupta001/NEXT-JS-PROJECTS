@@ -8,20 +8,55 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { avatarPlaceholderUrl } from "../../../constants";
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+const validateEmail = (email: string) => {
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!EMAIL_PATTERN.test(normalizedEmail)) {
+        throw new Error("Invalid email address");
+    }
+
+    return normalizedEmail;
+};
+
+const validateFullName = (fullName: string) => {
+    const normalizedName = fullName.trim();
+
+    if (normalizedName.length < 2 || normalizedName.length > 50) {
+        throw new Error("Full name must be between 2 and 50 characters");
+    }
+
+    return normalizedName;
+};
+
+const validateOtp = (password: string) => {
+    const normalizedOtp = password.trim();
+
+    if (!/^\d{6}$/.test(normalizedOtp)) {
+        throw new Error("Invalid OTP");
+    }
+
+    return normalizedOtp;
+};
+
 const getUserByEmail = async (email: string) => {
     const { databases } = await createAdminClient();
+    const normalizedEmail = validateEmail(email);
 
     const result = await databases.listDocuments(
         appwriteConfig.databaseId,
         appwriteConfig.userCollectionId,
-        [Query.equal("email", [email])],
+        [Query.equal("email", [normalizedEmail])],
     );
 
     return result.total > 0 ? result.documents[0] : null;
 };
 
 const handleError = (error: unknown, message: string) => {
-    console.log(error, message);
+    console.error(message, error);
     throw error;
 };
 
@@ -29,7 +64,7 @@ export const sendEmailOTP = async ({ email }: { email: string }) => {
     const { account } = await createAdminClient();
 
     try {
-        const session = await account.createEmailToken(ID.unique(), email);
+        const session = await account.createEmailToken(ID.unique(), validateEmail(email));
 
         return session.userId;
     } catch (error) {
@@ -38,9 +73,11 @@ export const sendEmailOTP = async ({ email }: { email: string }) => {
 };
 
 export const createAccount = async ({ fullName, email }: { fullName: string; email: string; }) => {
-    const existingUser = await getUserByEmail(email);
+    const safeEmail = validateEmail(email);
+    const safeFullName = validateFullName(fullName);
+    const existingUser = await getUserByEmail(safeEmail);
 
-    const accountId = await sendEmailOTP({ email });
+    const accountId = await sendEmailOTP({ email: safeEmail });
     
     if (!accountId) throw new Error("Failed to send an OTP");
 
@@ -52,8 +89,8 @@ export const createAccount = async ({ fullName, email }: { fullName: string; ema
             appwriteConfig.userCollectionId,
             ID.unique(),
             {
-                fullName,
-                email,
+                fullName: safeFullName,
+                email: safeEmail,
                 avatar: avatarPlaceholderUrl,
                 accountId,
             },
@@ -73,7 +110,7 @@ export const verifySecret = async ({
     try {
         const { account } = await createAdminClient();
 
-        const session = await account.createSession(accountId, password);
+        const session = await account.createSession(accountId, validateOtp(password));
 
         (await cookies()).set("appwrite-session", session.secret, {
             path: "/",
@@ -103,8 +140,8 @@ export const getCurrentUser = async () => {
         if (user.total <= 0) return null;
 
         return parseStringify(user.documents[0]);
-    } catch (error) {
-        console.log(error);
+    } catch {
+        return null;
     }
 };
 
@@ -123,11 +160,12 @@ export const signOutUser = async () => {
 
 export const signInUser = async ({ email }: { email: string }) => {
     try {
-        const existingUser = await getUserByEmail(email);
+        const safeEmail = validateEmail(email);
+        const existingUser = await getUserByEmail(safeEmail);
 
         // User exists, send OTP
         if (existingUser) {
-            await sendEmailOTP({ email });
+            await sendEmailOTP({ email: safeEmail });
             return parseStringify({ accountId: existingUser.accountId });
         }
 

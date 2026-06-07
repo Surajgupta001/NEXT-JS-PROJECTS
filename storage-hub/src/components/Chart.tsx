@@ -17,7 +17,7 @@ const chartConfig = {
 
 function Chart({ used = 0 }: { used: number }) {
 
-    const chartData = [{ storage: "used", 10: used, fill: "white" }];
+    const chartData = [{ storage: used, fill: "white" }];
 
     return (
         <Card className="chart">

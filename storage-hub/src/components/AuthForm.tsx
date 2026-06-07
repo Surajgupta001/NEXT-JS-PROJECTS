@@ -25,7 +25,7 @@ function AuthForm({ type }: { type: FormType }) {
 
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    const [accountId, setAccountId] = useState(null);
+    const [accountId, setAccountId] = useState<string | null>(null);
 
     const formSchema = authFormSchema(type);
     const form = useForm<z.infer<typeof formSchema>>({
@@ -49,9 +49,14 @@ function AuthForm({ type }: { type: FormType }) {
                     })
                     : await signInUser({ email: values.email });
 
+            if (user.error) {
+                setErrorMessage(user.error);
+                return;
+            }
+
             setAccountId(user.accountId);
         } catch {
-            setErrorMessage("Failed to create account. Please try again.");
+            setErrorMessage("Authentication failed. Please try again.");
         } finally {
             setIsLoading(false);
         }

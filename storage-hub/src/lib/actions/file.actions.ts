@@ -9,15 +9,66 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "./user.actions";
 
 const handleError = (error: unknown, message: string) => {
-    console.log(message, error);
-    return error
+    console.error(message, error);
+    throw error;
 };
 
-export const uploadFiles = async ({ file, ownerId, accountId, path }: UploadFileProps) => {
+const ALLOWED_SORT_FIELDS = new Set(["$createdAt", "$updatedAt", "name", "size"]);
+const ALLOWED_REVALIDATE_PATHS = new Set(["/", "/documents", "/images", "/media", "/others"]);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const normalizePath = (path: string) => {
+    return ALLOWED_REVALIDATE_PATHS.has(path) ? path : "/";
+};
+
+const sanitizeText = (value: string, maxLength: number) => {
+    return value.trim().slice(0, maxLength);
+};
+
+const sanitizeEmails = (emails: string[]) => {
+    return Array.from(
+        new Set(
+            emails
+                .map((email) => email.trim().toLowerCase())
+                .filter((email) => EMAIL_PATTERN.test(email))
+        )
+    );
+};
+
+const getCurrentUserOrThrow = async () => {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+        throw new Error("User not authenticated");
+    }
+
+    return currentUser;
+};
+
+const getOwnedFileOrThrow = async (fileId: string) => {
+    const { databases } = await createAdminClient();
+    const currentUser = await getCurrentUserOrThrow();
+
+    const file = await databases.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.filesCollectionId,
+        fileId
+    );
+
+    if (file.owner !== currentUser.$id) {
+        throw new Error("Not authorized to modify this file");
+    }
+
+    return { databases, currentUser, file };
+};
+
+export const uploadFiles = async ({ file, path }: UploadFileProps) => {
     const { storage, databases } = await createAdminClient();
 
     try {
+        const currentUser = await getCurrentUserOrThrow();
         const inputFile = InputFile.fromBuffer(file, file.name);
+        const fileType = getFileType(file.name);
 
         const bucketFile = await storage.createFile(
             appwriteConfig.bucketId,
@@ -26,13 +77,13 @@ export const uploadFiles = async ({ file, ownerId, accountId, path }: UploadFile
         );
 
         const fileDocument = {
-            type: getFileType(bucketFile.name).type,
-            name: bucketFile.name,
+            type: fileType.type,
+            name: sanitizeText(bucketFile.name, 255),
             url: constructFileUrl(bucketFile.$id),
-            extension: getFileType(bucketFile.name).extension,
+            extension: fileType.extension,
             size: bucketFile.sizeOriginal,
-            owner: ownerId,
-            accountId,
+            owner: currentUser.$id,
+            accountId: currentUser.accountId,
             users: [],
             bucketFileId: bucketFile.$id,
         };
@@ -51,7 +102,7 @@ export const uploadFiles = async ({ file, ownerId, accountId, path }: UploadFile
                 return handleError(error, "Failed creating file document");
             });
 
-        revalidatePath(path);
+        revalidatePath(normalizePath(path));
 
         return parseStringify(newFile);
     } catch (error) {
@@ -59,7 +110,7 @@ export const uploadFiles = async ({ file, ownerId, accountId, path }: UploadFile
     }
 };
 
-const createQueries = (currentUser: Models.Document & { email: string }, types: string[], searchText: string, sort: string, limit?: number) => {
+const createQueries = (currentUser: FileDocument & { email: string }, types: string[], searchText: string, sort: string, limit?: number) => {
     const queries = [
         Query.or([
             Query.equal("owner", [currentUser.$id]),
@@ -67,14 +118,21 @@ const createQueries = (currentUser: Models.Document & { email: string }, types: 
         ]),
     ];
 
-    if (types.length > 0) queries.push(Query.equal("type", types));
-    if (searchText) queries.push(Query.contains("name", searchText));
-    if (limit) queries.push(Query.limit(limit));
+    const validTypes = types.filter((type): type is FileType =>
+        ["document", "image", "video", "audio", "other"].includes(type)
+    );
+    const sanitizedSearch = sanitizeText(searchText, 100);
+
+    if (validTypes.length > 0) queries.push(Query.equal("type", validTypes));
+    if (sanitizedSearch) queries.push(Query.contains("name", sanitizedSearch));
+    if (limit) queries.push(Query.limit(Math.min(Math.max(limit, 1), 50)));
 
     if (sort) {
         const [sortBy, orderBy] = sort.split("-");
 
-        queries.push(orderBy === 'asc' ? Query.orderAsc(sortBy) : Query.orderDesc(sortBy));
+        if (ALLOWED_SORT_FIELDS.has(sortBy)) {
+            queries.push(orderBy === 'asc' ? Query.orderAsc(sortBy) : Query.orderDesc(sortBy));
+        }
     }
 
     return queries;
@@ -84,11 +142,7 @@ export const getFiles = async ({ types = [], searchText = "", sort = '$createdAt
     const { databases } = await createAdminClient();
 
     try {
-        const currentUser = await getCurrentUser();
-
-        if (!currentUser) {
-            throw new Error("User not authenticated");
-        }
+        const currentUser = await getCurrentUserOrThrow();
 
         const queries = createQueries(currentUser, types, searchText, sort, limit);
 
@@ -152,11 +206,16 @@ export const getFiles = async ({ types = [], searchText = "", sort = '$createdAt
 };
 
 export const renameFile = async ({ fileId, name, extension, path }: RenameFileProps) => {
-    const { databases } = await createAdminClient();
-
     try {
+        const { databases, file } = await getOwnedFileOrThrow(fileId);
+        const safeName = sanitizeText(name, 120);
+        const safeExtension = sanitizeText(extension || file.extension, 20);
 
-        const newName = `${name}.${extension}`;
+        if (!safeName) {
+            throw new Error("File name is required");
+        }
+
+        const newName = safeExtension ? `${safeName}.${safeExtension}` : safeName;
         const updatedFile = await databases.updateDocument(
             appwriteConfig.databaseId,
             appwriteConfig.filesCollectionId,
@@ -165,7 +224,7 @@ export const renameFile = async ({ fileId, name, extension, path }: RenameFilePr
                 name: newName,
             },
         );
-        revalidatePath(path);
+        revalidatePath(normalizePath(path));
 
         return parseStringify(updatedFile);
     } catch (error) {
@@ -174,19 +233,20 @@ export const renameFile = async ({ fileId, name, extension, path }: RenameFilePr
 };
 
 export const updateFileUsers = async ({ fileId, emails, path }: UpdateFileUsersProps) => {
-    const { databases } = await createAdminClient();
-
     try {
+        const { databases, currentUser } = await getOwnedFileOrThrow(fileId);
+        const safeEmails = sanitizeEmails(emails).filter((email) => email !== currentUser.email);
+
         const updatedFile = await databases.updateDocument(
             appwriteConfig.databaseId,
             appwriteConfig.filesCollectionId,
             fileId,
             {
-                users: emails,
+                users: safeEmails,
             },
         );
 
-        revalidatePath(path);
+        revalidatePath(normalizePath(path));
         return parseStringify(updatedFile);
     } catch (error) {
         handleError(error, "Failed to share file");
@@ -194,9 +254,15 @@ export const updateFileUsers = async ({ fileId, emails, path }: UpdateFileUsersP
 };
 
 export const deleteFile = async ({ fileId, bucketFileId, path }: DeleteFileProps) => {
-    const { databases, storage } = await createAdminClient();
+    const { storage } = await createAdminClient();
 
     try {
+        const { databases, file } = await getOwnedFileOrThrow(fileId);
+
+        if (file.bucketFileId !== bucketFileId) {
+            throw new Error("File storage id mismatch");
+        }
+
         const deletedFile = await databases.deleteDocument(
             appwriteConfig.databaseId,
             appwriteConfig.filesCollectionId,
@@ -207,7 +273,7 @@ export const deleteFile = async ({ fileId, bucketFileId, path }: DeleteFileProps
             await storage.deleteFile(appwriteConfig.bucketId, bucketFileId);
         }
 
-        revalidatePath(path);
+        revalidatePath(normalizePath(path));
         return parseStringify({ status: "success" });
     } catch (error) {
         handleError(error, "Failed to delete file");

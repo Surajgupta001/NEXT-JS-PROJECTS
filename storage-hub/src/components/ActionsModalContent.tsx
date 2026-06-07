@@ -58,7 +58,14 @@ export function ShareInput({ file, onInputChange, onRemove }: Props) {
                 <Input
                     type="email"
                     placeholder="Enter email address"
-                    onChange={(e) => onInputChange(e.target.value.trim().split(","))}
+                    onChange={(e) => {
+                        const nextEmails = e.target.value
+                            .split(",")
+                            .map((email) => email.trim())
+                            .filter(Boolean);
+
+                        onInputChange(Array.from(new Set([...file.users, ...nextEmails])));
+                    }}
                     className="share-input-field"
                 />
                 <div className="pt-4">

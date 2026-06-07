@@ -12,6 +12,7 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { renameFile, updateFileUsers, deleteFile } from '@/lib/actions/file.actions';
 import { FileDetails, ShareInput } from './ActionsModalContent';
+import { toast } from 'sonner';
 
 function ActionDropdown({ file }: { file: FileDocument }) {
 
@@ -37,52 +38,64 @@ function ActionDropdown({ file }: { file: FileDocument }) {
 
         setIsLoading(true);
 
-        let success = false;
+        try {
+            let success = false;
 
-        const actions = {
-            rename: () => renameFile({
-                fileId: file.$id,
-                name: name,
-                extension: file.extension,
-                path: path
-            }),
+            const actions = {
+                rename: () => renameFile({
+                    fileId: file.$id,
+                    name: name,
+                    extension: file.extension,
+                    path: path
+                }),
 
-            share: () => updateFileUsers({
-                fileId: file.$id,
-                emails: emails,
-                path
-            }),
+                share: () => updateFileUsers({
+                    fileId: file.$id,
+                    emails: emails,
+                    path
+                }),
 
-            delete: () => deleteFile({
-                fileId: file.$id,
-                bucketFileId: file.bucketFileId,
-                path
-            }),
-        };
+                delete: () => deleteFile({
+                    fileId: file.$id,
+                    bucketFileId: file.bucketFileId,
+                    path
+                }),
+            };
 
-        const actionFn = actions[action.value as keyof typeof actions];
-        if (actionFn) {
-            success = await actionFn();
+            const actionFn = actions[action.value as keyof typeof actions];
+            if (actionFn) {
+                success = Boolean(await actionFn());
+            }
+
+            if (success) {
+                closeAllModals();
+            }
+        } catch {
+            toast.error("Action failed", {
+                description: `Could not ${action.label.toLowerCase()} ${file.name}.`,
+            });
+        } finally {
+            setIsLoading(false);
         }
-
-        if (success) {
-            closeAllModals();
-        }
-
-        setIsLoading(false);
     };
 
     const handleRemoveUser = async (email: string) => {
-        const updatedEmails = emails.filter(e => e !== email);
+        const updatedEmails = file.users.filter(e => e !== email);
 
-        const success = await updateFileUsers({
-            fileId: file.$id,
-            emails: updatedEmails,
-            path
-        });
+        try {
+            const success = await updateFileUsers({
+                fileId: file.$id,
+                emails: updatedEmails,
+                path
+            });
 
-        if (success) {
-            setEmails(updatedEmails);
+            if (success) {
+                setEmails(updatedEmails);
+            }
+        } catch {
+            toast.error("Action failed", {
+                description: `Could not remove ${email}.`,
+            });
         }
 
         closeAllModals();
@@ -129,7 +142,7 @@ function ActionDropdown({ file }: { file: FileDocument }) {
                         <Button onClick={closeAllModals} className="modal-cancel-button">
                             Cancel
                         </Button>
-                        <Button onClick={handleAction} className="modal-submit-button">
+                        <Button onClick={handleAction} className="modal-submit-button" disabled={isLoading}>
                             <p className="capitalize">{value}</p>
                             {isLoading && (
                                 <Image
