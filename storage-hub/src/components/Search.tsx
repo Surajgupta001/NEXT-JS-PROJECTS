@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Input } from './ui/input'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { getFiles } from '@/lib/actions/file.actions';
@@ -17,6 +17,7 @@ function Search() {
     const [query, setQuery] = useState(searchQuery);
     const [results, setResults] = useState<FileDocument[]>([]);
     const [open, setOpen] = useState(false);
+    const latestRequestId = useRef(0);
 
     const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
     if (searchQuery !== prevSearchQuery) {
@@ -30,17 +31,40 @@ function Search() {
     const [debounceQuery] = useDebounce(query, 300);
 
     useEffect(() => {
+        const requestId = latestRequestId.current + 1;
+        latestRequestId.current = requestId;
+
         const fetchFiles = async () => {
-            if (debounceQuery.length === 0) {
+            const trimmedQuery = debounceQuery.trim();
+
+            if (trimmedQuery.length === 0) {
                 setResults([]);
                 setOpen(false);
-                return router.push(path.replace(searchParams.toString(), ""));
+
+                if (searchParams.has("query")) {
+                    const nextParams = new URLSearchParams(searchParams.toString());
+                    nextParams.delete("query");
+                    const nextUrl = nextParams.toString() ? `${path}?${nextParams.toString()}` : path;
+
+                    router.replace(nextUrl);
+                }
+
+                return;
             }
 
-            const files = await getFiles({ types: [], searchText: debounceQuery });
+            try {
+                const files = await getFiles({ types: [], searchText: trimmedQuery, limit: 8 });
 
-            setResults(files.documents);
-            setOpen(true);
+                if (latestRequestId.current !== requestId) return;
+
+                setResults(files.documents);
+                setOpen(true);
+            } catch {
+                if (latestRequestId.current !== requestId) return;
+
+                setResults([]);
+                setOpen(true);
+            }
         };
 
         fetchFiles();
@@ -50,7 +74,10 @@ function Search() {
         setOpen(false);
         setResults([]);
 
-        router.push(`/${file.type === "video" || file.type === "audio" ? "media" : file.type + "s"}?query=${query}`);
+        const nextParams = new URLSearchParams();
+        nextParams.set("query", query.trim());
+
+        router.push(`/${file.type === "video" || file.type === "audio" ? "media" : file.type + "s"}?${nextParams.toString()}`);
     };
 
     return (
