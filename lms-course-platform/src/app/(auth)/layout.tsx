@@ -15,7 +15,7 @@ export default function layout({ children }: { children: React.ReactNode }) {
             </Link>
             <div className='flex flex-col w-full max-w-sm gap-6'>
                 <Link href='/' className='flex items-center self-center gap-2 font-medium'>
-                    <Image src='/white_logo_lms3.png' alt='LMS Logo' width={80} height={80} />
+                    <Image src='/white_logo_lms3.png' alt='LMS Logo' width={80} height={80} style={{ width: 'auto', height: 'auto' }} />
                     <span className='text-2xl font-extrabold'>LMS</span>
                 </Link>
                 {children}
