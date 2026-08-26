@@ -9,9 +9,9 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { courseCategories, courseLevels, courseSchema, courseStatus, CourseFormValues, CourseSchema } from "@/lib/zodSchema";
+import RichTextEditor from "@/components/rich-text-editor/Editor";
 
 export default function CourseCreationPage() {
     const form = useForm<CourseFormValues, unknown, CourseSchema>({
@@ -131,18 +131,25 @@ export default function CourseCreationPage() {
 
                         {/* Description */}
                         <Field>
-                            <FieldLabel htmlFor="description">Course Description</FieldLabel>
-                            <Textarea
-                                id="description"
-                                placeholder="Write a detailed description of your course..."
-                                className="min-h-32 resize-y"
-                                {...form.register("description")}
+                            <FieldLabel htmlFor="description">
+                                Course Description
+                            </FieldLabel>
+
+                            <Controller
+                                name="description"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <>
+                                        <RichTextEditor field={field} />
+
+                                        {fieldState.error && (
+                                            <FieldError>
+                                                {fieldState.error.message}
+                                            </FieldError>
+                                        )}
+                                    </>
+                                )}
                             />
-                            {form.formState.errors.description && (
-                                <FieldError>
-                                    {form.formState.errors.description.message}
-                                </FieldError>
-                            )}
                         </Field>
 
                         {/* Category + Level */}
