@@ -264,15 +264,29 @@ export default function CourseCreationPage() {
                             </Field>
                         </div>
 
-                        {/* File Key */}
+                        {/* Thumbnail Image */}
                         <Field>
-                            <FieldLabel htmlFor="fileKey">Thumbnail Image</FieldLabel>
-                            <Uploader />
-                            {form.formState.errors.fileKey && (
-                                <FieldError>
-                                    {form.formState.errors.fileKey.message}
-                                </FieldError>
-                            )}
+                            <FieldLabel htmlFor="fileKey">
+                                Course Thumbnail
+                            </FieldLabel>
+                            <Controller
+                                name="fileKey"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <>
+                                        <Uploader
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                        />
+
+                                        {fieldState.error && (
+                                            <FieldError>
+                                                {fieldState.error.message}
+                                            </FieldError>
+                                        )}
+                                    </>
+                                )}
+                            />
                         </Field>
 
                         {/* Status */}

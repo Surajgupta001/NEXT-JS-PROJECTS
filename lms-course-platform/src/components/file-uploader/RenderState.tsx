@@ -1,17 +1,9 @@
 import { cn } from "@/lib/utils";
-import {
-    CloudUploadIcon,
-    ImageIcon,
-    XIcon,
-} from "lucide-react";
+import { CloudUploadIcon, ImageIcon, XIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import Image from "next/image";
 
-export default function RenderEmptyState({
-    isDragActive,
-}: {
-    isDragActive: boolean;
-}) {
+export default function RenderEmptyState({ isDragActive }: { isDragActive: boolean }) {
     return (
         <div className="text-center">
             <div className="flex items-center justify-center mx-auto mb-4 rounded-full size-12 bg-muted">
@@ -30,21 +22,14 @@ export default function RenderEmptyState({
                 </span>
             </p>
 
-            <Button
-                type="button"
-                className="mt-4 cursor-pointer"
-            >
+            <Button type="button" className="mt-4 cursor-pointer" >
                 Select File
             </Button>
         </div>
     );
 }
 
-export function RenderErrorState({
-    onRetry,
-}: {
-    onRetry?: () => void;
-}) {
+export function RenderErrorState({ onRetry }: { onRetry?: () => void }) {
     return (
         <div className="text-center">
             <div className="flex items-center justify-center mx-auto mb-4 rounded-full size-12 bg-destructive/30">
@@ -73,15 +58,7 @@ export function RenderErrorState({
     );
 }
 
-export function RenderUploadedState({
-    previewUrl,
-    isDeleting,
-    handleRemoveFile,
-}: {
-    previewUrl: string;
-    isDeleting: boolean;
-    handleRemoveFile: () => void;
-}) {
+export function RenderUploadedState({ previewUrl, isDeleting, handleRemoveFile, }: { previewUrl: string; isDeleting: boolean; handleRemoveFile: () => void }) {
     return (
         <div className="relative w-full h-full">
             <Image
@@ -113,15 +90,7 @@ export function RenderUploadedState({
     );
 }
 
-export function RenderUploadingState({
-    progress,
-    file,
-    previewUrl,
-}: {
-    progress: number;
-    file: File;
-    previewUrl: string;
-}) {
+export function RenderUploadingState({ progress, file, previewUrl }: { progress: number; file: File; previewUrl: string; }) {
     return (
         <div className="relative w-full h-full">
             {/* Preview */}
