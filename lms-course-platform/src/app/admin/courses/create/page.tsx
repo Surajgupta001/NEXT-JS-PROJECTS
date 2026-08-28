@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
-import { ArrowLeft, SparkleIcon } from "lucide-react";
+import { ArrowLeft, Loader2, PlusIcon, SparkleIcon } from "lucide-react";
 import Link from "next/link";
 import slugify from "slugify";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -13,8 +13,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { courseCategories, courseLevels, courseSchema, courseStatus, CourseFormValues, CourseSchema } from "@/lib/zodSchema";
 import RichTextEditor from "@/components/rich-text-editor/Editor";
 import Uploader from "@/components/file-uploader/Uploader";
+import { useTransition } from "react";
+import { tryCatch } from "@/hooks/try-catch";
+import { createCourse } from "../action";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function CourseCreationPage() {
+
+    const [pending, startTransition] = useTransition();
+    const router = useRouter();
+
     const form = useForm<CourseFormValues, unknown, CourseSchema>({
         resolver: zodResolver(courseSchema),
 
@@ -33,7 +42,22 @@ export default function CourseCreationPage() {
     });
 
     function onSubmit(values: CourseSchema) {
-        console.log("Course Data:", values);
+        startTransition(async () => {
+            const { data: result, error } = await tryCatch(createCourse(values))
+
+            if (error) {
+                console.error("Error creating course:", error);
+                return;
+            }
+
+            if (result.status === 'success') {
+                toast.success(result.message);
+                router.push("/admin/courses");
+                form.reset();
+            } else {
+                toast.error(result.message);
+            }
+        });
     }
 
     function generateSlug() {
@@ -322,16 +346,29 @@ export default function CourseCreationPage() {
                         </Field>
 
                         {/* Actions */}
-                        <div className="flex justify-end gap-3 pt-6 border-t">
+                        <div className="flex justify-end gap-3 border-t pt-6">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => form.reset()}
+                                disabled={pending}
                             >
                                 Reset
                             </Button>
-
-                            <Button type="submit">Create Course</Button>
+                            <Button
+                                type="submit"
+                                disabled={pending}
+                            >
+                                {pending ? (
+                                    <>
+                                        <Loader2 className="ml-1 size-4 animate-spin" /> Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <PlusIcon className="ml-1 size-4 cursor-pointer" /> Create Course
+                                    </>
+                                )}
+                            </Button>
                         </div>
                     </form>
                 </CardContent>
