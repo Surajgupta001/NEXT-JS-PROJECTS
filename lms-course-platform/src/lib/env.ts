@@ -11,9 +11,17 @@ export const env = createEnv({
         RESEND_API_KEY: z.string().min(1),
         ARCJET_KEY: z.string().min(1),
         ARCJET_ENV: z.enum(["development", "production"]),
+        IMAGEKIT_PRIVATE_KEY: z.string().min(1),
     },
+
+    client: {
+        NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY: z.string().min(1),
+        NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT: z.string(),
+    },
+
     // For Next.js >= 13.4.4, you only need to destructure client variables:
     experimental__runtimeEnv: {
-
+        NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY,
+        NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT,
     }
 });

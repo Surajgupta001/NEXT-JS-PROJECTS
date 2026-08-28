@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { courseCategories, courseLevels, courseSchema, courseStatus, CourseFormValues, CourseSchema } from "@/lib/zodSchema";
 import RichTextEditor from "@/components/rich-text-editor/Editor";
+import Uploader from "@/components/file-uploader/Uploader";
 
 export default function CourseCreationPage() {
     const form = useForm<CourseFormValues, unknown, CourseSchema>({
@@ -263,20 +264,29 @@ export default function CourseCreationPage() {
                             </Field>
                         </div>
 
-                        {/* File Key */}
+                        {/* Thumbnail Image */}
                         <Field>
-                            <FieldLabel htmlFor="fileKey">Thumbnail Image</FieldLabel>
-                            <Input
-                                id="fileKey"
-                                placeholder="Thumbnail Url"
-                                {...form.register("fileKey")}
-                            />
+                            <FieldLabel htmlFor="fileKey">
+                                Course Thumbnail
+                            </FieldLabel>
+                            <Controller
+                                name="fileKey"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <>
+                                        <Uploader
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                        />
 
-                            {form.formState.errors.fileKey && (
-                                <FieldError>
-                                    {form.formState.errors.fileKey.message}
-                                </FieldError>
-                            )}
+                                        {fieldState.error && (
+                                            <FieldError>
+                                                {fieldState.error.message}
+                                            </FieldError>
+                                        )}
+                                    </>
+                                )}
+                            />
                         </Field>
 
                         {/* Status */}
@@ -312,7 +322,7 @@ export default function CourseCreationPage() {
                         </Field>
 
                         {/* Actions */}
-                        <div className="flex justify-end gap-3 border-t pt-6">
+                        <div className="flex justify-end gap-3 pt-6 border-t">
                             <Button
                                 type="button"
                                 variant="outline"
