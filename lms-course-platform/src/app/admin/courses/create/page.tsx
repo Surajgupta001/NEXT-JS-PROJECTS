@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { courseCategories, courseLevels, courseSchema, courseStatus, CourseFormValues, CourseSchema } from "@/lib/zodSchema";
 import RichTextEditor from "@/components/rich-text-editor/Editor";
+import Uploader from "@/components/file-uploader/Uploader";
 
 export default function CourseCreationPage() {
     const form = useForm<CourseFormValues, unknown, CourseSchema>({
@@ -266,12 +267,7 @@ export default function CourseCreationPage() {
                         {/* File Key */}
                         <Field>
                             <FieldLabel htmlFor="fileKey">Thumbnail Image</FieldLabel>
-                            <Input
-                                id="fileKey"
-                                placeholder="Thumbnail Url"
-                                {...form.register("fileKey")}
-                            />
-
+                            <Uploader />
                             {form.formState.errors.fileKey && (
                                 <FieldError>
                                     {form.formState.errors.fileKey.message}
@@ -312,7 +308,7 @@ export default function CourseCreationPage() {
                         </Field>
 
                         {/* Actions */}
-                        <div className="flex justify-end gap-3 border-t pt-6">
+                        <div className="flex justify-end gap-3 pt-6 border-t">
                             <Button
                                 type="button"
                                 variant="outline"
