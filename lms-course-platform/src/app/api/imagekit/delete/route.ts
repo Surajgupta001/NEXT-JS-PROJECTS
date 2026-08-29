@@ -1,8 +1,57 @@
 import { env } from "@/lib/env";
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
+import arcjet, { detectBot, fixedWindow } from "@/lib/arcjet";
+import { auth } from "@/lib/auth";
+
+// Route-specific Arcjet rules
+const aj = arcjet
+    .withRule(
+        detectBot({
+            mode: "LIVE",
+            allow: [],
+        })
+    )
+    .withRule(
+        fixedWindow({
+            mode: "LIVE",
+            window: "1m",
+            max: 5,
+        })
+    );
 
 export async function DELETE(request: Request) {
     try {
+
+        // Check Authentication
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        // Check if the user is authenticated
+        if (!session?.user) {
+            return NextResponse.json({
+                error: "Unauthorized",
+            }, {
+                status: 401
+            });
+        }
+
+        // Protect the route with Arcjet
+        const decision = await aj.protect(request, {
+            fingerprint: session.user.id,
+        });
+
+        // Check if the request is denied by Arcjet
+        if (decision.isDenied()) {
+            return NextResponse.json({
+                error: "Too many requests",
+            }, {
+                status: 429
+
+            });
+        }
+
         const body = await request.json();
 
         const { fileId } = body;
@@ -22,8 +71,7 @@ export async function DELETE(request: Request) {
             headers: {
                 Authorization: `Basic ${credentials}`,
             },
-        }
-        );
+        });
 
         if (!response.ok) {
             const error = await response.text();
@@ -44,7 +92,7 @@ export async function DELETE(request: Request) {
 
     } catch (error) {
         console.error("ImageKit delete error:", error);
-        
+
         return NextResponse.json({
             error: "Failed to delete file",
         }, {

@@ -76,7 +76,10 @@ export default function Uploader({ value, onChange }: UploaderProps) {
              * Get ImageKit authentication parameters
              */
             const authResponse = await fetch("/api/imagekit/upload", {
-                method: "GET",
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
             });
 
             if (!authResponse.ok) {
@@ -373,7 +376,7 @@ export default function Uploader({ value, onChange }: UploaderProps) {
         );
     }
 
-    const { getRootProps,getInputProps,isDragActive } = useDropzone({
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
             "image/*": [".jpeg", ".jpg", ".png", ".webp"],
