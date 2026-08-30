@@ -77,13 +77,11 @@ export default function Uploader({ value, onChange }: UploaderProps) {
              */
             const authResponse = await fetch("/api/imagekit/upload", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
             });
 
             if (!authResponse.ok) {
-                throw new Error("Failed to authenticate with ImageKit");
+                const errorData = await authResponse.json().catch(() => null);
+                throw new Error(errorData?.error || "Failed to authenticate with ImageKit");
             }
 
             const { token, expire, signature, publicKey } = await authResponse.json();

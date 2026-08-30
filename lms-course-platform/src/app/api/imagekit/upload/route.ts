@@ -1,9 +1,8 @@
 import { getUploadAuthParams } from "@imagekit/next/server";
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { env } from "@/lib/env";
 import arcjet, { detectBot, fixedWindow } from "@/lib/arcjet";
-import { auth } from "@/lib/auth";
+import { getAdminSession } from "@/app/data/admin/require-admin";
 
 // Route-specific Arcjet rules
 const aj = arcjet
@@ -22,22 +21,17 @@ const aj = arcjet
     );
 
 export async function POST(request: Request) {
-    try {
+    const session = await getAdminSession();
 
-        // Check Authentication
-        const session = await auth.api.getSession({
-            headers: await headers(),
+    if (!session) {
+        return NextResponse.json({
+            error: "Forbidden: Admin access required",
+        }, {
+            status: 403,
         });
+    }
 
-        // Check if the user is authenticated
-        if (!session?.user) {
-            return NextResponse.json({
-                error: "Unauthorized",
-            }, {
-                status: 401
-            });
-        }
-
+    try {
         // Protect the route with Arcjet
         const decision = await aj.protect(request, {
             fingerprint: session.user.id,
@@ -67,6 +61,7 @@ export async function POST(request: Request) {
         }, {
             status: 200
         });
+        
     } catch (error) {
         console.error("ImageKit authentication error:", error);
 

@@ -1,8 +1,10 @@
 import { AppSidebar } from "@/components/sidebar-ui/app-sidebar"
 import { SiteHeader } from "@/components/sidebar-ui/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { requireAdmin } from "@/app/data/admin/require-admin"
 
-export default function AdminLayout({children}: {children: React.ReactNode}) {
+export default async function AdminLayout({children}: {children: React.ReactNode}) {
+    await requireAdmin();
     return (
         <SidebarProvider
             style={

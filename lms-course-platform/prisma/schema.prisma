@@ -24,6 +24,11 @@ model User {
   accounts      Account[]
   courses       Course[]
 
+  role       String?
+  banned     Boolean?  @default(false)
+  banReason  String?
+  banExpires DateTime?
+
   @@unique([email])
   @@map("user")
 }
@@ -39,8 +44,11 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  impersonatedBy String?
+
   @@unique([token])
   @@map("session")
+  @@index([userId])
 }
 
 model Account {
@@ -60,8 +68,9 @@ model Account {
   createdAt             DateTime
   updatedAt             DateTime
 
-  @@unique([issuer, accountId])
+  @@unique([issuer, accountId], map: "account_issuer_accountId_uidx")
   @@map("account")
+  @@index([userId])
 }
 
 model Verification {
@@ -73,6 +82,7 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+  @@index([identifier])
 }
 
 model Course {
