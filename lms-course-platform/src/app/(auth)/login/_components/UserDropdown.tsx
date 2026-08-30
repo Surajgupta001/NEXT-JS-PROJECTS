@@ -8,14 +8,18 @@ import { BookOpen, ChevronDownIcon, Home, LayoutDashboardIcon, LogOut } from "lu
 import Link from "next/link";
 
 interface iAppProps {
-    name: string;
+    name?: string | null;
     email: string;
-    image: string;
+    image?: string | null;
 };
 
 export default function UserDropdown({ name, email, image }: iAppProps) {
 
     const handleSignOut = useSignOut();
+
+    const displayName = name && name.trim() !== "" ? name : (email ? email.split("@")[0] : "User");
+    const avatarUrl = image || `https://avatar.vercel.sh/${encodeURIComponent(email || "user")}`;
+    const initials = displayName[0]?.toUpperCase() || "U";
 
     return (
         <DropdownMenu>
@@ -29,8 +33,8 @@ export default function UserDropdown({ name, email, image }: iAppProps) {
                 }
             >
                 <Avatar className="size-9">
-                    <AvatarImage src={image} alt={`${name}'s profile`} />
-                    <AvatarFallback>{name[0].toUpperCase()}</AvatarFallback>
+                    <AvatarImage src={avatarUrl} alt={`${displayName}'s profile`} />
+                    <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <ChevronDownIcon
                     size={16}
@@ -43,7 +47,7 @@ export default function UserDropdown({ name, email, image }: iAppProps) {
                 {/* User Information + Navigation */}
                 <DropdownMenuGroup>
                     <DropdownMenuLabel className="flex flex-col min-w-0 gap-1">
-                        <span className="text-sm font-semibold truncate">{name}</span>
+                        <span className="text-sm font-semibold truncate">{displayName}</span>
                         <span className="text-xs font-normal truncate text-muted-foreground">{email}</span>
                     </DropdownMenuLabel>
                     <DropdownMenuItem
