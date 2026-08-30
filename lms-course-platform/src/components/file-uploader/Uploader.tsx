@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "../ui/card";
 import { cn } from "@/lib/utils";
 import RenderEmptyState, { RenderErrorState, RenderUploadedState, RenderUploadingState } from "./RenderState";
+import { useConstructUrl } from "@/hooks/use-construct-url";
 
 interface UploaderProps {
     value?: string;
@@ -28,25 +29,22 @@ interface UploaderState {
     fileType: "image" | "video";
 }
 
-const initialState: UploaderState = {
-    id: null,
-    file: null,
-    uploading: false,
-    progress: 0,
-    key: undefined,
-    fileId: undefined,
-    url: undefined,
-    isDeleting: false,
-    error: false,
-    objectUrl: undefined,
-    fileType: "image",
-};
-
 export default function Uploader({ value, onChange }: UploaderProps) {
-    const [fileState, setFileState] = useState<UploaderState>(() => ({
-        ...initialState,
-        key: value,
-    }));
+    const fileUrl = useConstructUrl(value || '');
+
+    const [fileState, setFileState] = useState<UploaderState>({
+        id: null,
+        file: null,
+        uploading: false,
+        progress: 0,
+        key: undefined,
+        fileId: undefined,
+        url: undefined,
+        isDeleting: false,
+        error: false,
+        fileType: "image",
+        objectUrl: fileUrl,
+    });
 
     const fileRef = useRef<File | null>(null);
 
@@ -250,7 +248,17 @@ export default function Uploader({ value, onChange }: UploaderProps) {
              * Reset uploader
              */
             setFileState({
-                ...initialState,
+                id: null,
+                file: null,
+                uploading: false,
+                progress: 0,
+                key: undefined,
+                fileId: undefined,
+                url: undefined,
+                isDeleting: false,
+                error: false,
+                objectUrl: undefined,
+                fileType: "image",
             });
 
             toast.success("File removed successfully!");
@@ -397,7 +405,7 @@ export default function Uploader({ value, onChange }: UploaderProps) {
                     : "border-border hover:border-primary"
             )}
         >
-            <CardContent className="flex h-full w-full items-center justify-center p-4">
+            <CardContent className="flex items-center justify-center w-full h-full p-4">
                 <input
                     {...getInputProps()}
                 />
