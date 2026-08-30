@@ -32,7 +32,8 @@ async function protect(req: NextRequest): Promise<ArcjetDecision> {
         headers: req.headers,
     });
 
-    const userId = session?.user.id ?? ip(req) ?? "127.0.0.1";
+    const clientIp = ip(req);
+    const userId = session?.user?.id || (clientIp && clientIp.trim() !== "" ? clientIp : "127.0.0.1");
 
     if (req.nextUrl.pathname.startsWith("/api/auth/sign-up")) {
         const body = await req.clone().json();

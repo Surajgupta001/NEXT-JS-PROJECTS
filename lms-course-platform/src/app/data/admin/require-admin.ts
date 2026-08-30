@@ -9,7 +9,7 @@ export async function getAdminSession() {
         headers: await headers(),
     });
 
-    if (!session || session.user.role !== "admin") {
+    if (!session || !session.user || session.user.role?.toLowerCase() !== "admin") {
         return null;
     }
 
