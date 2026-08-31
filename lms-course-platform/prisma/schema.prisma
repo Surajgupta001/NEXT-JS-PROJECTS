@@ -1,7 +1,5 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// learn more about it: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client"
@@ -13,19 +11,20 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String   @id
   name          String
   email         String
   emailVerified Boolean
   image         String?
   createdAt     DateTime
   updatedAt     DateTime
-  sessions      Session[]
-  accounts      Account[]
-  courses       Course[]
 
-  role       String?
-  banned     Boolean?  @default(false)
+  sessions Session[]
+  accounts Account[]
+  courses  Course[]
+
+  role       String    @default("user")
+  banned     Boolean   @default(false)
   banReason  String?
   banExpires DateTime?
 
@@ -34,30 +33,32 @@ model User {
 }
 
 model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime
-  updatedAt DateTime
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime
+  updatedAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  userId         String
   impersonatedBy String?
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([token])
-  @@map("session")
   @@index([userId])
+  @@map("session")
 }
 
 model Account {
-  id                    String    @id
-  accountId             String
-  providerId            String
-  issuer                String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String @id
+  accountId  String
+  providerId String
+  issuer     String
+  userId     String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -69,8 +70,8 @@ model Account {
   updatedAt             DateTime
 
   @@unique([issuer, accountId], map: "account_issuer_accountId_uidx")
-  @@map("account")
   @@index([userId])
+  @@map("account")
 }
 
 model Verification {
@@ -81,8 +82,8 @@ model Verification {
   createdAt  DateTime?
   updatedAt  DateTime?
 
-  @@map("verification")
   @@index([identifier])
+  @@map("verification")
 }
 
 model Course {
@@ -99,8 +100,11 @@ model Course {
   status           CourseStatus @default(DRAFT)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
-  users            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId           String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  chapters Chapter[]
 }
 
 enum CourseLevel {
@@ -113,4 +117,31 @@ enum CourseStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+model Chapter {
+  id        String   @id @default(uuid())
+  title     String
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessons Lesson[]
+}
+
+model Lesson {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  thumbnailKey String?
+  videoKey     String?
+  position     Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  chapterId String
+  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 }

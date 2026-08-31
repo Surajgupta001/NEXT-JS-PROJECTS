@@ -1,7 +1,8 @@
-import 'server-only';
-import { requireAdmin } from './require-admin';
-import { prisma } from '@/lib/db';
-import { notFound } from 'next/navigation';
+import "server-only";
+
+import { requireAdmin } from "./require-admin";
+import { prisma } from "@/lib/db";
+import { notFound } from "next/navigation";
 
 export async function adminGetCourse(id: string) {
     await requireAdmin();
@@ -22,14 +23,31 @@ export async function adminGetCourse(id: string) {
             slug: true,
             smallDescription: true,
             category: true,
+            chapters: {
+                select: {
+                    id: true,
+                    title: true,
+                    position: true,
+                    lessons: {
+                        select: {
+                            id: true,
+                            title: true,
+                            description: true,
+                            thumbnailKey: true,
+                            videoKey: true,
+                            position: true,
+                        },
+                    },
+                },
+            },
         },
     });
 
     if (!data) {
-       return notFound(); 
+        return notFound();
     }
 
     return data;
-};
+}
 
 export type AdminGetCourseSingularType = Awaited<ReturnType<typeof adminGetCourse>>;
