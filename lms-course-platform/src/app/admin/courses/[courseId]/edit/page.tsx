@@ -39,11 +39,11 @@ export default async function CourseEditPage({ params }: { params: Params }) {
                         <CardHeader>
                             <CardTitle>Course Structure</CardTitle>
                             <CardDescription>
-                                Here you can update ourse Structure
+                                Here you can update your course structure
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <CourseStructure />
+                            <CourseStructure data={data} />
                         </CardContent>
                     </Card>
                 </TabsContent>
