@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { reorderChapters, reorderLessons } from "../action";
 import NewChapterModal from "./NewChapterModal";
 import NewLessonModal from "./NewLessonModal";
+import DeleteLesson from "./DeleteLesson";
 
 interface SortableItemProps {
     id: string;
@@ -335,12 +336,7 @@ export default function CourseStructure({ data }: CourseStructureProps) {
                                                                             </Link>
                                                                         </div>
 
-                                                                        <Button
-                                                                            size="icon"
-                                                                            variant="outline"
-                                                                        >
-                                                                            <Trash2 className="size-4" />
-                                                                        </Button>
+                                                                        <DeleteLesson chapterId={item.id} lessonId={lesson.id} courseId={data.id} />
                                                                     </div>
                                                                 )}
                                                             </SortableItem>

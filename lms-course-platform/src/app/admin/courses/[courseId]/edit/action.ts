@@ -297,3 +297,86 @@ export async function createLesson(values: LessonSchema) {
         };
     }
 };
+
+export async function deleteLesson({ lessonId, chapterId, courseId }: { lessonId: string; chapterId: string; courseId: string }) {
+    await requireAdmin();
+
+    try {
+        const chapterWithLessons = await prisma.chapter.findUnique({
+            where: {
+                id: chapterId,
+            },
+            select: {
+                lessons: {
+                    orderBy: {
+                        position: 'asc'
+                    },
+                    select: {
+                        id: true,
+                        position: true,
+                    },
+                },
+            },
+        });
+
+        if (!chapterWithLessons) {
+            return {
+                success: false,
+                status: "error",
+                message: "Chapter not found.",
+            };
+        }
+
+        const lessons = chapterWithLessons.lessons;
+
+        const lessonToDelete = lessons.find(lesson => lesson.id === lessonId);
+
+        if (!lessonToDelete) {
+            return {
+                success: false,
+                status: "error",
+                message: "Lesson not found.",
+            };
+        }
+
+        const remainingLessons = lessons.filter(lesson => lesson.id !== lessonId);
+
+        const updates = remainingLessons.map((lesson, index) => {
+            return prisma.lesson.update({
+                where: {
+                    id: lesson.id,
+                },
+                data: {
+                    position: index + 1,
+                },
+            });
+        });
+
+        await prisma.$transaction([
+            ...updates,
+            prisma.lesson.delete({
+                where: {
+                    id: lessonId,
+                    chapterId: chapterId,
+                },
+            }),
+        ]);
+
+        revalidatePath(`/admin/courses/${courseId}/edit`);
+
+        return {
+            success: true,
+            status: "success",
+            message: "Lesson deleted successfully.",
+        };
+
+    } catch (error) {
+        console.error("Error deleting lesson:", error);
+
+        return {
+            success: false,
+            status: "error",
+            message: "Failed to delete lesson. Please try again later.",
+        };
+    }
+};
