@@ -1,4 +1,4 @@
-import { Ban, PlusCircle } from 'lucide-react'
+import { BookOpen, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { buttonVariants } from '../ui/button';
 
@@ -11,15 +11,34 @@ interface EmptyStateProps {
 
 export default function EmptyState({ title, description, buttonText, href }: EmptyStateProps) {
     return (
-        <div className='flex flex-col items-center justify-center flex-1 h-full p-8 text-center border-dashed rounded-md animate-in fade-in-50'>
-            <div className='flex items-center justify-center rounded-full size-20 bg-primary/10'>
-                <Ban className='size-10 text-primary' />
+        <div className="flex items-center justify-center flex-1 p-6">
+            <div className="flex flex-col items-center justify-center w-full max-w-lg px-6 py-12 text-center border border-dashed shadow-sm rounded-xl bg-card/50">
+                {/* Icon */}
+                <div className="flex items-center justify-center rounded-full size-20 bg-primary/10">
+                    <BookOpen className="size-10 text-primary" />
+                </div>
+
+                {/* Content */}
+                <h2 className="mt-6 text-3xl font-semibold tracking-tight">
+                    {title}
+                </h2>
+
+                <p className="max-w-md mt-3 text-sm leading-6 text-muted-foreground">
+                    {description}
+                </p>
+
+                {/* Action */}
+                <Link
+                    href={href}
+                    className={buttonVariants({
+                        variant: 'default',
+                        className: 'mt-8 gap-2',
+                    })}
+                >
+                    <PlusCircle className="size-5" />
+                    {buttonText}
+                </Link>
             </div>
-            <h2 className='mt-6 text-6xl'>{title}</h2>
-            <p className='mt-2 mb-8 text-sm leading-tight text-center text-muted-foreground'>{description}</p>
-            <Link href={href} className={buttonVariants({ variant: "default" })}>
-                <PlusCircle className='mr-2 size-6' />{buttonText}
-            </Link>
         </div>
     );
 }

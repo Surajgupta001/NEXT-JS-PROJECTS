@@ -18,11 +18,14 @@ import { tryCatch } from "@/hooks/try-catch";
 import { createCourse } from "../action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useConfetti } from "@/hooks/use-confetti";
 
 export default function CourseCreationPage() {
 
     const [pending, startTransition] = useTransition();
     const router = useRouter();
+    const {} = useConfetti();
+    const { triggerConfetti } = useConfetti();
 
     const form = useForm<CourseFormValues, unknown, CourseSchema>({
         resolver: zodResolver(courseSchema),
@@ -52,6 +55,8 @@ export default function CourseCreationPage() {
 
             if (result.status === 'success') {
                 toast.success(result.message);
+                triggerConfetti();
+                form.reset();
                 router.push("/admin/courses");
                 form.reset();
             } else {
