@@ -1,25 +1,47 @@
 import { cn } from "@/lib/utils";
-import { CloudUploadIcon, ImageIcon, XIcon } from "lucide-react";
+import { CloudUploadIcon, FileVideoIcon, ImageIcon, XIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import Image from "next/image";
 
-export default function RenderEmptyState({ isDragActive }: { isDragActive: boolean }) {
+interface RenderEmptyStateProps {
+    isDragActive: boolean;
+    fileTypeAccepted?: "image" | "video";
+}
+
+export default function RenderEmptyState({ isDragActive, fileTypeAccepted }: RenderEmptyStateProps) {
+    const isVideo = fileTypeAccepted === "video";
+
     return (
         <div className="text-center">
             <div className="flex items-center justify-center mx-auto mb-4 rounded-full size-12 bg-muted">
-                <CloudUploadIcon
-                    className={cn(
-                        "size-6 text-muted-foreground",
-                        isDragActive && "text-primary"
-                    )}
-                />
+                {isVideo ? (
+                    <FileVideoIcon
+                        className={cn(
+                            "size-6 text-muted-foreground",
+                            isDragActive && "text-primary"
+                        )}
+                    />
+                ) : (
+                    <CloudUploadIcon
+                        className={cn(
+                            "size-6 text-muted-foreground",
+                            isDragActive && "text-primary"
+                        )}
+                    />
+                )}
             </div>
 
             <p className="text-base font-semibold text-foreground">
-                Drop your files here or{" "}
+                Drop your {isVideo ? "video" : "image"} here or{" "}
                 <span className="font-bold cursor-pointer text-primary">
                     click to upload
                 </span>
+            </p>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+                {isVideo
+                    ? "MP4, WebM, MOV, or AVI (max 50MB)"
+                    : "JPG, JPEG, PNG, or WEBP (max 5MB)"}
             </p>
 
             <Button type="button" className="mt-4 cursor-pointer" >
@@ -58,16 +80,33 @@ export function RenderErrorState({ onRetry }: { onRetry?: () => void }) {
     );
 }
 
-export function RenderUploadedState({ previewUrl, isDeleting, handleRemoveFile, }: { previewUrl: string; isDeleting: boolean; handleRemoveFile: () => void }) {
+interface RenderUploadedStateProps {
+    previewUrl: string;
+    isDeleting: boolean;
+    handleRemoveFile: () => void;
+    fileTypeAccepted?: "image" | "video";
+}
+
+export function RenderUploadedState({ previewUrl, isDeleting, handleRemoveFile, fileTypeAccepted }: RenderUploadedStateProps) {
+    const isVideo = fileTypeAccepted === "video";
+
     return (
         <div className="relative w-full h-full">
-            <Image
-                src={previewUrl}
-                alt="Uploaded file preview"
-                fill
-                unoptimized
-                className="object-contain p-2 rounded-md"
-            />
+            {isVideo ? (
+                <video
+                    src={previewUrl}
+                    className="object-contain w-full h-full p-2 rounded-md"
+                    controls
+                />
+            ) : (
+                <Image
+                    src={previewUrl}
+                    alt="Uploaded file preview"
+                    fill
+                    unoptimized
+                    className="object-contain p-2 rounded-md"
+                />
+            )}
 
             <Button
                 type="button"
@@ -90,17 +129,33 @@ export function RenderUploadedState({ previewUrl, isDeleting, handleRemoveFile, 
     );
 }
 
-export function RenderUploadingState({ progress, file, previewUrl }: { progress: number; file: File; previewUrl: string; }) {
+interface RenderUploadingStateProps {
+    progress: number;
+    file: File;
+    previewUrl: string;
+    fileTypeAccepted?: "image" | "video";
+}
+
+export function RenderUploadingState({ progress, file, previewUrl, fileTypeAccepted }: RenderUploadingStateProps) {
+    const isVideo = fileTypeAccepted === "video";
+
     return (
         <div className="relative w-full h-full">
             {/* Preview */}
-            <Image
-                src={previewUrl}
-                alt="Uploading file preview"
-                fill
-                unoptimized
-                className="object-contain p-2 rounded-md opacity-60"
-            />
+            {isVideo ? (
+                <video
+                    src={previewUrl}
+                    className="object-contain w-full h-full p-2 rounded-md opacity-60"
+                />
+            ) : (
+                <Image
+                    src={previewUrl}
+                    alt="Uploading file preview"
+                    fill
+                    unoptimized
+                    className="object-contain p-2 rounded-md opacity-60"
+                />
+            )}
 
             {/* Loading Overlay */}
             <div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/60 backdrop-blur-sm">

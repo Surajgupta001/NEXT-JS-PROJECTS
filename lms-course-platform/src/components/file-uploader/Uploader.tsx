@@ -13,7 +13,19 @@ import { useConstructUrl } from "@/hooks/use-construct-url";
 interface UploaderProps {
     value?: string;
     onChange?: (value: string) => void;
+    fileTypeAccepted: "image" | "video";
 }
+
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const VIDEO_MAX_SIZE = 50 * 1024 * 1024; // 50MB
+
+const IMAGE_ACCEPT = {
+    "image/*": [".jpeg", ".jpg", ".png", ".webp"],
+};
+
+const VIDEO_ACCEPT = {
+    "video/*": [".mp4", ".webm", ".mov", ".avi"],
+};
 
 interface UploaderState {
     id: string | null;
@@ -29,8 +41,9 @@ interface UploaderState {
     fileType: "image" | "video";
 }
 
-export default function Uploader({ value, onChange }: UploaderProps) {
+export default function Uploader({ value, onChange, fileTypeAccepted }: UploaderProps) {
     const fileUrl = useConstructUrl(value || '');
+    const isVideo = fileTypeAccepted === "video";
 
     const [fileState, setFileState] = useState<UploaderState>({
         id: null,
@@ -42,8 +55,8 @@ export default function Uploader({ value, onChange }: UploaderProps) {
         url: undefined,
         isDeleting: false,
         error: false,
-        fileType: "image",
-        objectUrl: fileUrl,
+        fileType: fileTypeAccepted,
+        objectUrl: value ? fileUrl : undefined,
     });
 
     const fileRef = useRef<File | null>(null);
@@ -95,7 +108,7 @@ export default function Uploader({ value, onChange }: UploaderProps) {
                 expire,
                 signature,
                 publicKey,
-                folder: "/lms/courses/thumbnails",
+                folder: isVideo ? "/lms/courses/videos" : "/lms/courses/thumbnails",
                 useUniqueFileName: true,
                 onProgress: (event) => {
                     if (!event.total) return;
@@ -164,7 +177,7 @@ export default function Uploader({ value, onChange }: UploaderProps) {
             }));
         }
     },
-        [onChange]
+        [onChange, isVideo]
     );
 
     /*
@@ -198,11 +211,11 @@ export default function Uploader({ value, onChange }: UploaderProps) {
             isDeleting: false,
             error: false,
             objectUrl,
-            fileType: "image",
+            fileType: fileTypeAccepted,
         });
 
         uploadFile(file);
-    }, [fileState.objectUrl, revokeObjectUrl, uploadFile]);
+    }, [fileState.objectUrl, revokeObjectUrl, uploadFile, fileTypeAccepted]);
 
     /*
      * Delete uploaded file from ImageKit
@@ -316,8 +329,10 @@ export default function Uploader({ value, onChange }: UploaderProps) {
             )
         );
 
+        const sizeLimit = isVideo ? "50MB" : "5MB";
+
         if (fileSize) {
-            toast.error("File size exceeds the 5MB limit.");
+            toast.error(`File size exceeds the ${sizeLimit} limit.`);
         }
 
         if (tooManyFiles) {
@@ -325,11 +340,13 @@ export default function Uploader({ value, onChange }: UploaderProps) {
         }
 
         if (invalidType) {
-            toast.error("Only JPG, JPEG, PNG, and WEBP images are allowed.");
+            if (isVideo) {
+                toast.error("Only MP4, WebM, MOV, and AVI videos are allowed.");
+            } else {
+                toast.error("Only JPG, JPEG, PNG, and WEBP images are allowed.");
+            }
         }
-    },
-        []
-    );
+    }, [isVideo]);
 
     /*
      * Render uploader state
@@ -346,6 +363,7 @@ export default function Uploader({ value, onChange }: UploaderProps) {
                     progress={fileState.progress}
                     file={fileState.file}
                     previewUrl={fileState.objectUrl}
+                    fileTypeAccepted={fileTypeAccepted}
                 />
             );
         }
@@ -368,6 +386,7 @@ export default function Uploader({ value, onChange }: UploaderProps) {
                     previewUrl={fileState.objectUrl}
                     isDeleting={fileState.isDeleting}
                     handleRemoveFile={handleRemoveFile}
+                    fileTypeAccepted={fileTypeAccepted}
                 />
             );
         }
@@ -378,18 +397,18 @@ export default function Uploader({ value, onChange }: UploaderProps) {
         return (
             <RenderEmptyState
                 isDragActive={isDragActive}
+                fileTypeAccepted={fileTypeAccepted}
             />
         );
     }
 
+    const maxSize = isVideo ? VIDEO_MAX_SIZE : IMAGE_MAX_SIZE;
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
-        accept: {
-            "image/*": [".jpeg", ".jpg", ".png", ".webp"],
-        },
-
+        accept: isVideo ? VIDEO_ACCEPT : IMAGE_ACCEPT,
         maxFiles: 1,
-        maxSize: 5 * 1024 * 1024,
+        maxSize,
         multiple: false,
         onDropRejected: rejectedFiles,
         disabled: fileState.uploading || !!fileState.objectUrl,

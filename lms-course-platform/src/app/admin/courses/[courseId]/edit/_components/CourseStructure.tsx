@@ -328,7 +328,7 @@ export default function CourseStructure({ data }: CourseStructureProps) {
                                                                             <FileText className="size-4" />
 
                                                                             <Link
-                                                                                href={`/admin/courses/${data.id}/edit/chapters/${item.id}/lessons/${lesson.id}`}
+                                                                                href={`/admin/courses/${data.id}/${item.id}/${lesson.id}`}
                                                                                 className="hover:text-primary"
                                                                             >
                                                                                 {lesson.title}
