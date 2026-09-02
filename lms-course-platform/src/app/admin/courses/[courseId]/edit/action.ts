@@ -3,7 +3,7 @@
 import { requireAdmin } from "@/app/data/admin/require-admin";
 import arcjet, { detectBot, fixedWindow } from "@/lib/arcjet";
 import { prisma } from "@/lib/db";
-import { chapterSchema, ChapterSchema, courseSchema, CourseSchema } from "@/lib/zodSchema";
+import { chapterSchema, ChapterSchema, courseSchema, CourseSchema, lessonSchema, LessonSchema } from "@/lib/zodSchema";
 import { request } from "@arcjet/next";
 import { revalidatePath } from "next/cache";
 
@@ -220,7 +220,7 @@ export async function createChapter(values: ChapterSchema) {
             status: "success",
             message: "Chapter created successfully.",
         };
-        
+
     } catch (error) {
         console.error("Error creating chapter:", error);
 
@@ -228,6 +228,72 @@ export async function createChapter(values: ChapterSchema) {
             success: false,
             status: "error",
             message: "Failed to create chapter. Please try again later.",
+        };
+    }
+};
+
+export async function createLesson(values: LessonSchema) {
+    await requireAdmin();
+
+    try {
+        const result = lessonSchema.safeParse(values);
+
+        if (!result.success) {
+            return {
+                success: false,
+                status: "error",
+                message: "Invalid data format.",
+            };
+        }
+
+        if (!result.data.chapterId) {
+            return {
+                success: false,
+                status: "error",
+                message: "Chapter ID is required.",
+            };
+        }
+
+        await prisma.$transaction(async (tsx) => {
+            const maxPos = await tsx.lesson.findFirst({
+                where: {
+                    chapterId: result.data.chapterId,
+                },
+                select: {
+                    position: true
+                },
+                orderBy: {
+                    position: 'desc'
+                },
+            });
+
+            await tsx.lesson.create({
+                data: {
+                    title: result.data.name,
+                    description: result.data.description,
+                    videoKey: result.data.videoKey,
+                    thumbnailKey: result.data.thumbnailKey,
+                    chapterId: result.data.chapterId,
+                    position: (maxPos?.position ?? 0) + 1,
+                },
+            });
+        });
+
+        revalidatePath(`/admin/courses/${result.data.courseId}/edit`);
+
+        return {
+            success: true,
+            status: "success",
+            message: "Lesson created successfully.",
+        };
+
+    } catch (error) {
+        console.error("Error creating lesson:", error);
+
+        return {
+            success: false,
+            status: "error",
+            message: "Failed to create lesson. Please try again later.",
         };
     }
 };
