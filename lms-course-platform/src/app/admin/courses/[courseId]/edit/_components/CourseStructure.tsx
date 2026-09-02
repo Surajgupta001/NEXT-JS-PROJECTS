@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { toast } from "sonner";
 import { reorderChapters, reorderLessons } from "../action";
+import NewChapterModal from "./NewChapterModal";
 
 interface SortableItemProps {
     id: string;
@@ -236,6 +237,7 @@ export default function CourseStructure({ data }: CourseStructureProps) {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-border">
                     <CardTitle>Chapters</CardTitle>
+                    <NewChapterModal courseId={data.id} />
                 </CardHeader>
 
                 <CardContent>

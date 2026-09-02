@@ -3,7 +3,7 @@
 import { requireAdmin } from "@/app/data/admin/require-admin";
 import arcjet, { detectBot, fixedWindow } from "@/lib/arcjet";
 import { prisma } from "@/lib/db";
-import { courseSchema, CourseSchema } from "@/lib/zodSchema";
+import { chapterSchema, ChapterSchema, courseSchema, CourseSchema } from "@/lib/zodSchema";
 import { request } from "@arcjet/next";
 import { revalidatePath } from "next/cache";
 
@@ -134,7 +134,7 @@ export async function reorderLessons(courseId: string, lessons: { id: string; po
 
 export async function reorderChapters(courseId: string, chapters: { id: string; position: number }[]) {
     await requireAdmin();
-    
+
     try {
         if (!chapters || chapters.length === 0) {
             return {
@@ -173,6 +173,61 @@ export async function reorderChapters(courseId: string, chapters: { id: string; 
             success: false,
             status: "error",
             message: "Failed to reorder chapters. Please try again later.",
+        };
+    }
+};
+
+export async function createChapter(values: ChapterSchema) {
+    await requireAdmin();
+
+    try {
+        const result = chapterSchema.safeParse(values);
+
+        if (!result.success) {
+            return {
+                success: false,
+                status: "error",
+                message: "Invalid data format.",
+            };
+        }
+
+        await prisma.$transaction(async (tsx) => {
+            const maxPos = await tsx.chapter.findFirst({
+                where: {
+                    courseId: result.data.courseId,
+                },
+                select: {
+                    position: true
+                },
+                orderBy: {
+                    position: 'desc'
+                },
+            });
+
+            await tsx.chapter.create({
+                data: {
+                    title: result.data.name,
+                    courseId: result.data.courseId,
+                    position: (maxPos?.position ?? 0) + 1,
+                }
+            });
+        });
+
+        revalidatePath(`/admin/courses/${result.data.courseId}/edit`);
+
+        return {
+            success: true,
+            status: "success",
+            message: "Chapter created successfully.",
+        };
+        
+    } catch (error) {
+        console.error("Error creating chapter:", error);
+
+        return {
+            success: false,
+            status: "error",
+            message: "Failed to create chapter. Please try again later.",
         };
     }
 };
