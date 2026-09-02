@@ -8,7 +8,7 @@ import { ReactNode, useState } from "react";
 import { AdminGetCourseSingularType } from "@/app/data/admin/admin-get-course";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, FileText, GripVertical, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import { reorderChapters, reorderLessons } from "../action";
 import NewChapterModal from "./NewChapterModal";
 import NewLessonModal from "./NewLessonModal";
 import DeleteLesson from "./DeleteLesson";
+import DeleteChapter from "./DeleteChapter";
 
 interface SortableItemProps {
     id: string;
@@ -293,9 +294,7 @@ export default function CourseStructure({ data }: CourseStructureProps) {
                                                     <p className="font-medium">{item.title}</p>
                                                 </div>
 
-                                                <Button size="icon" variant="outline">
-                                                    <Trash2 className="size-4" />
-                                                </Button>
+                                                <DeleteChapter chapterId={item.id} courseId={data.id} />
                                             </div>
 
                                             {/* LESSONS */}
@@ -345,7 +344,7 @@ export default function CourseStructure({ data }: CourseStructureProps) {
 
                                                     {/* CREATE LESSON */}
                                                     <div className="p-2">
-                                                        <NewLessonModal  courseId={data.id} chapterId={item.id} />
+                                                        <NewLessonModal courseId={data.id} chapterId={item.id} />
                                                     </div>
                                                 </div>
                                             </CollapsibleContent>
