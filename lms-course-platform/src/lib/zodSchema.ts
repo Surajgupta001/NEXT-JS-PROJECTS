@@ -82,6 +82,35 @@ export const chapterSchema = z.object({
         .uuid("Invalid course ID"),
 });
 
+export const lessonSchema = z.object({
+    name: z
+        .string()
+        .min(3, "Lesson title must be at least 3 characters")
+        .max(100, "Lesson title cannot exceed 100 characters"),
+
+    courseId: z
+        .string()
+        .uuid("Invalid course ID"),
+
+    chapterId: z
+        .string()
+        .uuid("Invalid chapter ID"),
+
+    description: z
+        .string()
+        .min(3, "Description must be at least 3 characters")
+        .max(500, "Description cannot exceed 500 characters")
+        .optional(),
+
+    thumbnailKey: z
+        .string()
+        .optional(),
+
+    videoKey: z
+        .string()
+        .optional(),
+})
+
 export type CourseFormValues = z.input<typeof courseSchema>;
 
 export type CourseSchema = z.output<typeof courseSchema>;
@@ -89,3 +118,5 @@ export type CourseSchema = z.output<typeof courseSchema>;
 export type CourseCategory = (typeof courseCategories)[number];
 
 export type ChapterSchema = z.output<typeof chapterSchema>;
+
+export type LessonSchema = z.output<typeof lessonSchema>;

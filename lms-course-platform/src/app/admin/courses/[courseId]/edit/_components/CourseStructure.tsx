@@ -14,6 +14,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { reorderChapters, reorderLessons } from "../action";
 import NewChapterModal from "./NewChapterModal";
+import NewLessonModal from "./NewLessonModal";
 
 interface SortableItemProps {
     id: string;
@@ -348,12 +349,7 @@ export default function CourseStructure({ data }: CourseStructureProps) {
 
                                                     {/* CREATE LESSON */}
                                                     <div className="p-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            className="w-full"
-                                                        >
-                                                            Create New Lesson
-                                                        </Button>
+                                                        <NewLessonModal  courseId={data.id} chapterId={item.id} />
                                                     </div>
                                                 </div>
                                             </CollapsibleContent>
