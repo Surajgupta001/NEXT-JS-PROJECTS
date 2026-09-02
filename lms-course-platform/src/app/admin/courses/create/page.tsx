@@ -301,6 +301,7 @@ export default function CourseCreationPage() {
                                         <Uploader
                                             value={field.value}
                                             onChange={field.onChange}
+                                            fileTypeAccepted="image"
                                         />
 
                                         {fieldState.error && (
@@ -346,7 +347,7 @@ export default function CourseCreationPage() {
                         </Field>
 
                         {/* Actions */}
-                        <div className="flex justify-end gap-3 border-t pt-6">
+                        <div className="flex justify-end gap-3 pt-6 border-t">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -365,7 +366,7 @@ export default function CourseCreationPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <PlusIcon className="ml-1 size-4 cursor-pointer" /> Create Course
+                                        <PlusIcon className="ml-1 cursor-pointer size-4" /> Create Course
                                     </>
                                 )}
                             </Button>
