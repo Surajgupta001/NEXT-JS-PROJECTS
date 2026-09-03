@@ -191,7 +191,7 @@ export async function createChapter(values: ChapterSchema) {
             };
         }
 
-        await prisma.$transaction(async (tsx) => {
+        const created = await prisma.$transaction(async (tsx) => {
             const maxPos = await tsx.chapter.findFirst({
                 where: {
                     courseId: result.data.courseId,
@@ -204,7 +204,7 @@ export async function createChapter(values: ChapterSchema) {
                 },
             });
 
-            await tsx.chapter.create({
+            return tsx.chapter.create({
                 data: {
                     title: result.data.name,
                     courseId: result.data.courseId,
@@ -219,6 +219,11 @@ export async function createChapter(values: ChapterSchema) {
             success: true,
             status: "success",
             message: "Chapter created successfully.",
+            data: {
+                id: created.id,
+                title: created.title,
+                position: created.position,
+            },
         };
 
     } catch (error) {
@@ -254,7 +259,7 @@ export async function createLesson(values: LessonSchema) {
             };
         }
 
-        await prisma.$transaction(async (tsx) => {
+        const created = await prisma.$transaction(async (tsx) => {
             const maxPos = await tsx.lesson.findFirst({
                 where: {
                     chapterId: result.data.chapterId,
@@ -267,7 +272,7 @@ export async function createLesson(values: LessonSchema) {
                 },
             });
 
-            await tsx.lesson.create({
+            return tsx.lesson.create({
                 data: {
                     title: result.data.name,
                     description: result.data.description,
@@ -285,6 +290,11 @@ export async function createLesson(values: LessonSchema) {
             success: true,
             status: "success",
             message: "Lesson created successfully.",
+            data: {
+                id: created.id,
+                title: created.title,
+                position: created.position,
+            },
         };
 
     } catch (error) {
