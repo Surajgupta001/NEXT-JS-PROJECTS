@@ -47,6 +47,27 @@ export default function CourseStructure({ data }: CourseStructureProps) {
 
     const [items, setItems] = useState(initialItems);
 
+    function addChapter(chapter: { id: string; title: string; position: number }) {
+        setItems(prev => [...prev, {
+            id: chapter.id,
+            title: chapter.title,
+            order: chapter.position,
+            isOpen: false,
+            lessons: [],
+        }]);
+    }
+
+    function addLesson(chapterId: string, lesson: { id: string; title: string; position: number }) {
+        setItems(prev => prev.map(item => item.id === chapterId ? {
+            ...item,
+            lessons: [...item.lessons, {
+                id: lesson.id,
+                title: lesson.title,
+                order: lesson.position,
+            }],
+        } : item));
+    }
+
     function SortableItem({ id, data, children, className }: SortableItemProps) {
         const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, data });
 
@@ -240,7 +261,7 @@ export default function CourseStructure({ data }: CourseStructureProps) {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-border">
                     <CardTitle>Chapters</CardTitle>
-                    <NewChapterModal courseId={data.id} />
+                    <NewChapterModal courseId={data.id} onCreated={addChapter} />
                 </CardHeader>
 
                 <CardContent>
@@ -344,7 +365,7 @@ export default function CourseStructure({ data }: CourseStructureProps) {
 
                                                     {/* CREATE LESSON */}
                                                     <div className="p-2">
-                                                        <NewLessonModal courseId={data.id} chapterId={item.id} />
+                                                        <NewLessonModal courseId={data.id} chapterId={item.id} onCreated={(lesson) => addLesson(item.id, lesson)} />
                                                     </div>
                                                 </div>
                                             </CollapsibleContent>

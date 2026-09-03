@@ -5,16 +5,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus } from 'lucide-react';
 import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
 import { createChapter } from '../action';
 import { tryCatch } from '@/hooks/try-catch';
 import { toast } from 'sonner';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
-export default function NewChapterModal({ courseId }: { courseId: string }) {
+export default function NewChapterModal({ courseId, onCreated }: { courseId: string, onCreated?: (chapter: { id: string; title: string; position: number }) => void }) {
 
     const [isOpen, setIsOpen] = useState(false);
     const [pending, startTransition] = useTransition();
+    const router = useRouter();
 
     const form = useForm<ChapterSchema>({
         resolver: zodResolver(chapterSchema),
@@ -37,6 +39,10 @@ export default function NewChapterModal({ courseId }: { courseId: string }) {
                 toast.success(result.message);
                 form.reset();
                 setIsOpen(false);
+                router.refresh();
+                if (result.data) {
+                    onCreated?.(result.data);
+                }
             } else if (result.status === 'error') {
                 toast.error(result.message);
             }

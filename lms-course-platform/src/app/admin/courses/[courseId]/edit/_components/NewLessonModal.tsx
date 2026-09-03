@@ -7,14 +7,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { createLesson } from "../action";
 import { tryCatch } from "@/hooks/try-catch";
 import { toast } from "sonner";
 
-export default function NewLessonModal({ courseId, chapterId }: { courseId: string, chapterId: string }) {
+export default function NewLessonModal({ courseId, chapterId, onCreated }: { courseId: string, chapterId: string, onCreated?: (lesson: { id: string; title: string; position: number }) => void }) {
 
     const [isOpen, setIsOpen] = useState(false);
     const [pending, startTransition] = useTransition();
+    const router = useRouter();
 
     const form = useForm<LessonSchema>({
         resolver: zodResolver(lessonSchema),
@@ -38,6 +40,10 @@ export default function NewLessonModal({ courseId, chapterId }: { courseId: stri
                 toast.success(result.message);
                 form.reset();
                 setIsOpen(false);
+                router.refresh();
+                if (result.data) {
+                    onCreated?.(result.data);
+                }
             } else if (result.status === 'error') {
                 toast.error(result.message);
             }
