@@ -30,7 +30,7 @@ export default function PublicCourseCard({ data }: PublicCourseCardProps) {
             />
             <CardContent className='p-4'>
                 <Link
-                    href={`/course/${data.slug}`}
+                    href={`/courses/${data.slug}`}
                     className='text-lg font-medium transition-colors line-clamp-2 hover:underline group-hover:text-primary'
                 >
                     {data.title}
@@ -46,7 +46,7 @@ export default function PublicCourseCard({ data }: PublicCourseCardProps) {
                         <p className='text-sm text-muted-foreground'>{data.category}</p>
                     </div>
                 </div>
-                <Link href={`/course/${data.slug}`} className={buttonVariants({ variant: "default", className: "w-full mt-4" })}>
+                <Link href={`/courses/${data.slug}`} className={buttonVariants({ variant: "default", className: "w-full mt-4" })}>
                     Learn More
                 </Link>
             </CardContent>
