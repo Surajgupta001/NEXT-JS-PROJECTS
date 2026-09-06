@@ -1,23 +1,16 @@
 import { env } from "@/lib/env";
 import { NextResponse } from "next/server";
-import arcjet, { detectBot, fixedWindow } from "@/lib/arcjet";
+import arcjet, { fixedWindow } from "@/lib/arcjet";
 import { getAdminSession } from "@/app/data/admin/require-admin";
 
 // Route-specific Arcjet rules
-const aj = arcjet
-    .withRule(
-        detectBot({
-            mode: "LIVE",
-            allow: [],
-        })
-    )
-    .withRule(
-        fixedWindow({
-            mode: "LIVE",
-            window: "1m",
-            max: 5,
-        })
-    );
+const aj = arcjet.withRule(
+    fixedWindow({
+        mode: "LIVE",
+        window: "1m",
+        max: 5,
+    })
+);
 
 export async function DELETE(request: Request) {
     const session = await getAdminSession();
@@ -29,7 +22,7 @@ export async function DELETE(request: Request) {
             status: 403,
         });
     }
-    
+
     try {
 
         // Protect the route with Arcjet

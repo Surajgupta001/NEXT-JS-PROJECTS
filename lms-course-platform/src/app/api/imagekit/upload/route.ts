@@ -1,24 +1,17 @@
 import { getUploadAuthParams } from "@imagekit/next/server";
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import arcjet, { detectBot, fixedWindow } from "@/lib/arcjet";
+import arcjet, { fixedWindow } from "@/lib/arcjet";
 import { getAdminSession } from "@/app/data/admin/require-admin";
 
 // Route-specific Arcjet rules
-const aj = arcjet
-    .withRule(
-        detectBot({
-            mode: "LIVE",
-            allow: [],
-        })
-    )
-    .withRule(
-        fixedWindow({
-            mode: "LIVE",
-            window: "1m",
-            max: 5,
-        })
-    );
+const aj = arcjet.withRule(
+    fixedWindow({
+        mode: "LIVE",
+        window: "1m",
+        max: 5,
+    })
+);
 
 export async function POST(request: Request) {
     const session = await getAdminSession();
@@ -61,7 +54,7 @@ export async function POST(request: Request) {
         }, {
             status: 200
         });
-        
+
     } catch (error) {
         console.error("ImageKit authentication error:", error);
 
