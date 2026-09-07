@@ -284,6 +284,7 @@ export default function EditCourseForm({ data }: EditCourseFormProps) {
                             <Uploader
                                 value={field.value}
                                 onChange={field.onChange}
+                                fileTypeAccepted="image"
                             />
 
                             {fieldState.error && (

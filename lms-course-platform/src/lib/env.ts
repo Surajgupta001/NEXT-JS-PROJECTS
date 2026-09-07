@@ -12,6 +12,7 @@ export const env = createEnv({
         ARCJET_KEY: z.string().min(1),
         ARCJET_ENV: z.enum(["development", "production"]),
         IMAGEKIT_PRIVATE_KEY: z.string().min(1),
+        STRIPE_SECRET_KEY: z.string().min(1),
     },
 
     client: {
