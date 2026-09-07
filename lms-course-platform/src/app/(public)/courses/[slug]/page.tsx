@@ -8,7 +8,9 @@ import { RenderDescription } from "@/components/rich-text-editor/RenderDescripti
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { checkIfCourseBought } from "@/app/data/user/user-is-enrolled";
+import Link from "next/link";
+import EnrollmentButton from "./_components/EnrollmentButton";
 
 type Params = Promise<{ slug: string }>;
 
@@ -16,7 +18,7 @@ export default async function SlugPage({ params }: { params: Params }) {
 
     const { slug } = await params;
     const course = await getIndividualCourse(slug);
-
+    const isEnrolled = await checkIfCourseBought(course.id);
     const thumbnailUrl = constructUrl(course.fileKey);
 
     return (
@@ -200,7 +202,11 @@ export default async function SlugPage({ params }: { params: Params }) {
                                     </li>
                                 </ul>
                             </div>
-                            <Button className="w-full">Enroll Now</Button>
+                            {isEnrolled ? (
+                                <Link href='/dashboard'>Watch Course</Link>
+                            ) : (
+                                <EnrollmentButton courseId={course.id} />
+                            )}
                             <p className="mt-3 text-xs text-center text-muted-foreground">
                                 By enrolling in this course, you agree to our Terms of Service and Privacy Policy.
                             </p>
