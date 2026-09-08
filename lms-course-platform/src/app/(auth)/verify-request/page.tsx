@@ -6,10 +6,18 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { authClient } from "@/lib/auth-client";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 export default function VerifyRequestPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <VerifyRequestContent />
+        </Suspense>
+    );
+}
+
+function VerifyRequestContent() {
 
     const [emailpending, startTransition] = useTransition();
     const [otp, setOtp] = useState("");

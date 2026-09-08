@@ -15,7 +15,7 @@ import RichTextEditor from "@/components/rich-text-editor/Editor";
 import Uploader from "@/components/file-uploader/Uploader";
 import { useTransition } from "react";
 import { tryCatch } from "@/hooks/try-catch";
-import { createCourse } from "../action";
+import { createCourse } from "./action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useConfetti } from "@/hooks/use-confetti";
@@ -35,7 +35,7 @@ export default function CourseCreationPage() {
             description: "",
             fileKey: "",
             price: 0,
-            duration: 0,
+            duration: 60,
             level: "BEGINNER",
             category: "Development",
             status: "DRAFT",
@@ -46,21 +46,21 @@ export default function CourseCreationPage() {
 
     function onSubmit(values: CourseSchema) {
         startTransition(async () => {
-            const { data: result, error } = await tryCatch(createCourse(values))
+            const { data: result, error } = await tryCatch(createCourse(values));
 
             if (error) {
                 console.error("Error creating course:", error);
+                toast.error(error.message || "An unexpected error occurred. Please try again.");
                 return;
             }
 
-            if (result.status === 'success') {
+            if (result?.status === 'success') {
                 toast.success(result.message);
                 triggerConfetti();
                 form.reset();
                 router.push("/admin/courses");
-                form.reset();
             } else {
-                toast.error(result.message);
+                toast.error(result?.message || "Failed to create course.");
             }
         });
     }
@@ -101,7 +101,15 @@ export default function CourseCreationPage() {
                     <CardDescription>Provide the basic information about your course.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
+                    <form
+                        className="space-y-8"
+                        onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                            console.error("Course form validation errors:", errors);
+                            const firstKey = Object.keys(errors)[0] as keyof typeof errors;
+                            const firstMessage = errors[firstKey]?.message;
+                            toast.error(firstMessage ? String(firstMessage) : "Please fill in all required fields correctly.");
+                        })}
+                    >
 
                         {/* Course Title */}
                         <Field>
