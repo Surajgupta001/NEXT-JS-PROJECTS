@@ -42,10 +42,12 @@ export const courseSchema = z.object({
 
     price: z
         .number()
+        .int("Price must be a whole number")
         .min(0, "Price cannot be negative"),
 
     duration: z
         .number()
+        .int("Duration must be a whole number of minutes")
         .min(1, "Duration must be at least 1 minute")
         .max(500, "Duration cannot exceed 500 minutes"),
 

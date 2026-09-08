@@ -31,12 +31,11 @@ export async function deleteCourse(courseId: string) {
                     message: "Rate limit exceeded. Please try again later.",
                 };
             }
-        } else {
             return {
                 success: false,
                 status: "error",
                 message: "You are not authorized to perform this action.",
-            }
+            };
         }
 
         await prisma.course.delete({
