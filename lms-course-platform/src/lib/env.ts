@@ -25,5 +25,7 @@ export const env = createEnv({
     experimental__runtimeEnv: {
         NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY,
         NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT,
-    }
+    },
+    emptyStringAsUndefined: true,
+    skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });
