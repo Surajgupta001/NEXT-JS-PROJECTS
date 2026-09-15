@@ -6,7 +6,6 @@ import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { stripe } from "@/lib/stripe";
 import { request } from "@arcjet/next";
-import { redirect } from "next/navigation";
 import Stripe from "stripe";
 
 const aj = arcjet.withRule(
@@ -19,8 +18,6 @@ const aj = arcjet.withRule(
 
 export async function enrollInCourseAction(courseId: string) {
     const user = await requireUser();
-
-    let checkoutUrl: string;
 
     try {
         const req = await request();
@@ -46,6 +43,7 @@ export async function enrollInCourseAction(courseId: string) {
                 title: true,
                 price: true,
                 slug: true,
+                stripePriceId: true,
             },
         });
 
@@ -53,6 +51,13 @@ export async function enrollInCourseAction(courseId: string) {
             return {
                 status: "error",
                 message: "Course not found.",
+            };
+        }
+
+        if (!course.stripePriceId) {
+            return {
+                status: "error",
+                message: "Course is not configured for payments. Please contact support.",
             };
         }
 
@@ -143,12 +148,12 @@ export async function enrollInCourseAction(courseId: string) {
                     customer: stripeCustomerId,
                     line_items: [
                         {
-                            price: "price_1UD1T7HIS00vulyOO4GVdV1W",
+                            price: course.stripePriceId,
                             quantity: 1,
                         },
                     ],
                     mode: "payment",
-                    success_url: `${env.BETTER_AUTH_URL}/payment/success`,
+                    success_url: `${env.BETTER_AUTH_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
                     cancel_url: `${env.BETTER_AUTH_URL}/payment/cancel`,
                     metadata: {
                         userId: user.id,
@@ -168,10 +173,15 @@ export async function enrollInCourseAction(courseId: string) {
             return {
                 status: "success",
                 message: result.message,
+                checkoutUrl: null as string | null,
             };
         }
 
-        checkoutUrl = result.checkoutUrl as string;
+        return {
+            status: "success",
+            message: result.message,
+            checkoutUrl: result.checkoutUrl as string,
+        };
     } catch (error) {
         console.error("Error enrolling in course:", error);
 
@@ -187,6 +197,4 @@ export async function enrollInCourseAction(courseId: string) {
             message: "Failed to enroll in course. Please try again later.",
         };
     }
-
-    redirect(checkoutUrl);
 }

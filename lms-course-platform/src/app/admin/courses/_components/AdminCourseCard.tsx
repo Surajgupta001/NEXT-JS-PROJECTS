@@ -92,13 +92,19 @@ export default function AdminCourseCard({
                 </DropdownMenu>
             </div>
 
-            <Image
-                src={thumbnailUrl}
-                alt={data.title}
-                width={600}
-                height={400}
-                className="object-cover w-full h-full rounded-t-lg aspect-video"
-            />
+            {thumbnailUrl ? (
+                <Image
+                    src={thumbnailUrl}
+                    alt={data.title}
+                    width={600}
+                    height={400}
+                    className="object-cover w-full h-full rounded-t-lg aspect-video"
+                />
+            ) : (
+                <div className="flex w-full aspect-video items-center justify-center rounded-t-lg bg-muted text-muted-foreground">
+                    No image
+                </div>
+            )}
 
             <CardContent className="p-4">
                 <Link

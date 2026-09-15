@@ -35,42 +35,27 @@ const data = {
     {
       title: "Dashboard",
       url: "/admin",
-      icon: (
-        <LayoutDashboardIcon
-        />
-      ),
+      icon: LayoutDashboardIcon,
     },
     {
       title: "Courses",
       url: "/admin/courses",
-      icon: (
-        <ListIcon
-        />
-      ),
+      icon: ListIcon,
     },
     {
       title: "Analytics",
       url: "#",
-      icon: (
-        <ChartBarIcon
-        />
-      ),
+      icon: ChartBarIcon,
     },
     {
       title: "Projects",
       url: "#",
-      icon: (
-        <FolderIcon
-        />
-      ),
+      icon: FolderIcon,
     },
     {
       title: "Team",
       url: "#",
-      icon: (
-        <UsersIcon
-        />
-      ),
+      icon: UsersIcon,
     },
   ],
   navClouds: [
