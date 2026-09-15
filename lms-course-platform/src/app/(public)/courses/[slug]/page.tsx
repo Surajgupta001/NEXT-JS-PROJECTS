@@ -204,7 +204,7 @@ export default async function SlugPage({ params }: { params: Params }) {
                                 </ul>
                             </div>
                             {isEnrolled ? (
-                                <Link className={buttonVariants({ className: "w-full" })} href='/dashboard'>Watch Course</Link>
+                                <Link className={buttonVariants({ className: "w-full" })} href={`/dashboard/${course.slug}`}>Watch Now</Link>
                             ) : (
                                 <EnrollmentButton courseId={course.id} />
                             )}

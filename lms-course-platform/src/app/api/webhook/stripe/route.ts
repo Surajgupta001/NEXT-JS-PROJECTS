@@ -10,6 +10,10 @@ export async function POST(req: Request) {
 
     const signature = headerList.get("stripe-signature") as string;
 
+    if (!signature) {
+        return new Response(`Webhook Error: Missing stripe-signature header`, { status: 400 });
+    }
+
     let event: Stripe.Event;
 
     try {
@@ -26,32 +30,48 @@ export async function POST(req: Request) {
 
     if (event.type === "checkout.session.completed") {
         const courseId = session.metadata?.courseId;
+        const enrollmentId = session.metadata?.enrollmentId;
+        const metadataUserId = session.metadata?.userId;
         const customerId = session.customer as string;
 
-        if (!courseId) {
-            throw new Error("Course ID is missing in the session metadata.");
+        if (!courseId || !enrollmentId) {
+            return new Response(`Webhook Error: Missing courseId or enrollmentId in session metadata.`, { status: 400 });
         }
 
-        const user = await prisma.user.findUnique({
-            where: {
-                stripeCustomerId: customerId,
-            },
-        });
+        // Prefer metadata userId, fall back to Stripe customer lookup
+        let userId = metadataUserId;
 
-        if (!user) {
-            throw new Error("User not found for the given Stripe customer ID.");
+        if (!userId && customerId) {
+            const user = await prisma.user.findUnique({
+                where: {
+                    stripeCustomerId: customerId,
+                },
+                select: { id: true },
+            });
+
+            userId = user?.id;
         }
 
-        await prisma.enrollment.update({
+        if (!userId) {
+            return new Response(`Webhook Error: Could not resolve user for checkout session.`, { status: 404 });
+        }
+
+        await prisma.enrollment.upsert({
             where: {
-                id: session.metadata?.enrollmentId as string,
+                id: enrollmentId,
             },
-            data: {
-                userId: user.id,
+            update: {
+                userId: userId,
                 courseId: courseId,
-                amount: session.amount_total as number,
+                amount: session.amount_total ?? undefined,
                 status: "ACTIVE",
-            
+            },
+            create: {
+                id: enrollmentId,
+                userId: userId,
+                courseId: courseId,
+                amount: session.amount_total ?? 0,
+                status: "ACTIVE",
             },
         });
     }
