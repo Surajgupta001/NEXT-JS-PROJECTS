@@ -11,12 +11,8 @@
         "skipLibCheck": true,
         "noUncheckedIndexedAccess": true,
         "sourceMap": true,
+        "types": ["node"]
     },
-    "include": [
-        "src/**/*.ts"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules", "dist"]
 }
