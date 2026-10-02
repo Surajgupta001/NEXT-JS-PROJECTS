@@ -1,5 +1,15 @@
 import 'dotenv/config';
 
+const parseRedisDatabase = (value: string | undefined): number => {
+    const database = Number(value ?? 0);
+
+    if (!Number.isInteger(database) || database < 0) {
+        throw new Error('Redis database must be a valid non-negative integer');
+    }
+
+    return database;
+};
+
 const parsePort = (value: string | undefined): number => {
     const port = Number(value ?? 8000);
 
@@ -13,4 +23,10 @@ const parsePort = (value: string | undefined): number => {
 export const env = {
     port: parsePort(process.env.PORT),
     nodeEnv: process.env.NODE_ENV || 'development',
+    redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parsePort(process.env.REDIS_PORT ?? '6379'),
+        password: process.env.REDIS_PASSWORD || undefined,
+        database: parseRedisDatabase(process.env.REDIS_DATABASE),
+    }
 } as const;
