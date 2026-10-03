@@ -2,7 +2,7 @@ import { boolean, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-
 
 export const accountRole = pgEnum("account_role", ["FREELANCER", "CLIENT"]);
 
-export const acounts = pgTable("accounts", {
+export const accounts = pgTable("accounts", {
     id: uuid("id").defaultRandom().primaryKey(),
     auth_id: text("auth_id").notNull(),
     email: text("email").notNull(),
