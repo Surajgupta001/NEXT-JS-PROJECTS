@@ -1,4 +1,4 @@
-import { boolean, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 export const accountRole = pgEnum("account_role", ["FREELANCER", "CLIENT"]);
 
@@ -12,7 +12,9 @@ export const accounts = pgTable("accounts", {
     isOnBoardingComplete: boolean("isOnBoardingComplete").default(false),
     created_At: timestamp("created_At", { withTimezone: true }),
     updated_At: timestamp("updated_At", { withTimezone: true }),
-});
+}, (table) => [
+    unique("accounts_auth_id_role_unique").on(table.auth_id, table.role),
+]);
 
 export const client_metadata = pgTable("client_metadata", {
     id: uuid("id").defaultRandom().primaryKey(),
