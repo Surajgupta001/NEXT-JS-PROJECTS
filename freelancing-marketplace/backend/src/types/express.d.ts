@@ -3,11 +3,11 @@ declare global {
         interface Request {
             auth?: {
                 userId: string;
-                sessionid: string;
+                sessionId?: string;
                 role: 'client' | 'freelancer';
                 accountExists: boolean;
                 isOnboarded: boolean;
-            }
+            };
         }
     }
 }
