@@ -32,18 +32,23 @@ export const receiveSignup = async (input: SignupInput): Promise<void> => {
 
     const now = new Date();
 
-    await database.insert(accounts).values({
-        auth_id: input.userId,
-        email,
-        role: getDatabaseRole(input.role),
-        identityVerified: false,
-        isOnBoardingComplete: false,
-        created_At: now,
-        updated_At: now,
-    })
-        .onConflictDoNothing({
-            target: [accounts.auth_id, accounts.role],
-        });
+    try {
+        await database.insert(accounts).values({
+            auth_id: input.userId,
+            email,
+            role: getDatabaseRole(input.role),
+            identityVerified: false,
+            isOnBoardingComplete: false,
+            created_At: now,
+            updated_At: now,
+        })
+            .onConflictDoNothing({
+                target: [accounts.auth_id, accounts.role],
+            });
+    } catch (error) {
+        console.error('Error inserting account into database:', error);
+        throw new ApiError(500, 'failed to create account in the database');
+    }
 
     await redis.setEx(
         getAccountAuthCacheKey(input.userId, input.role),

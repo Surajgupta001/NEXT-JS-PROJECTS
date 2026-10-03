@@ -246,6 +246,13 @@ export function SignupForm({ role }: SignupFormProps) {
               placeholder="000000"
             />
           </label>
+          <div
+            id="clerk-captcha"
+            data-cl-theme="light"
+            data-cl-size="flexible"
+            data-cl-language="auto"
+            className="flex justify-center w-full"
+          />
           <button
             type="submit"
             disabled={isLoading || verificationCode.length !== 6}
@@ -478,6 +485,14 @@ export function SignupForm({ role }: SignupFormProps) {
             .
           </span>
         </label>
+
+        <div
+          id="clerk-captcha"
+          data-cl-theme="light"
+          data-cl-size="flexible"
+          data-cl-language="auto"
+          className="flex justify-center w-full"
+        />
 
         <button
           type="submit"

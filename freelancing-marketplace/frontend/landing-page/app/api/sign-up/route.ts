@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     // If the token is valid and the role matches, proceed to call the backend signup endpoint
     try {
-        const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/auth/signup`, {
+        const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/auth/sign-up`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`,
