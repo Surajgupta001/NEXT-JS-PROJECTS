@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { countries } from "./countries";
 import styles from "./signup.module.css";
-import { useSignUp } from "@clerk/nextjs";
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useSignUp, useUser } from "@clerk/nextjs";
+import { SubmitEvent, useEffect, useState } from "react";
 
 interface SignupFormProps {
   role: "client" | "freelancer";
@@ -19,9 +18,24 @@ export function SignupForm({ role }: SignupFormProps) {
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const { user } = useUser();
 
   const isClient = role === "client";
   const isLoading = fetchStatus === "fetching";
+
+  function redirectToDashboard(role: unknown) {
+    const dashboardUrl = role === "client" ? process.env.NEXT_PUBLIC_CLIENT_DASHBOARD : process.env.NEXT_PUBLIC_FREELANCER_DASHBOARD;
+
+    if (!dashboardUrl) {
+      throw new Error("Dashboard URL is not defined in environment variables");
+    }
+
+    window.location.assign(dashboardUrl);
+  };
+
+  useEffect(() => {
+    if (user) redirectToDashboard(user.unsafeMetadata.role);
+  }, [user]);
 
   function getErrorMessage(error: unknown) {
     if (error instanceof Error) {
@@ -61,7 +75,7 @@ export function SignupForm({ role }: SignupFormProps) {
     }
   };
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("");
     setIsError(false);
@@ -143,7 +157,7 @@ export function SignupForm({ role }: SignupFormProps) {
     }
   };
 
-  async function handleVerification(event: FormEvent<HTMLFormElement>) {
+  async function handleVerification(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("");
     setIsError(false);

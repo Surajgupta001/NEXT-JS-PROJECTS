@@ -1,20 +1,93 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useEffect, useState } from "react";
 import styles from "../signup/signup.module.css";
+import { useSignIn, useUser } from "@clerk/nextjs";
 
 export function LoginForm() {
+
+  const { signIn, fetchStatus } = useSignIn();
+  const { user } = useUser();
+
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState("");
+  const [isError, setIsError] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const isLoading = fetchStatus === "fetching";
+
+  function redirectToDashboard(role: unknown) {
+    const dashboardUrl = role === "client" ? process.env.NEXT_PUBLIC_CLIENT_DASHBOARD : process.env.NEXT_PUBLIC_FREELANCER_DASHBOARD;
+
+    if (!dashboardUrl) {
+      throw new Error("Dashboard URL is not defined in environment variables");
+    }
+
+    window.location.assign(dashboardUrl);
+  };
+
+  useEffect(() => {
+    if (user) {
+      redirectToDashboard(user.unsafeMetadata.role);
+    }
+  }, [user]);
+
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus("Login is ready to activate when Clerk is connected.");
+    setStatus("");
+    setIsError(false);
+
+    if (!signIn) {
+      setIsError(true);
+      setStatus("Sign-in is not ready yet. Please try again later.");
+    }
+
+    const formdata = new FormData(event.currentTarget);
+
+    try {
+      const { error } = await signIn.password({
+        emailAddress: String(formdata.get("email") ?? "").trim(),
+        password: String(formdata.get("password") ?? ""),
+      });
+
+      if (error) throw error;
+      if (signIn.status !== "complete") {
+        throw new Error('Additional verification is required. Please complete the sign-in process.');
+      }
+
+      const { error: finalizeError } = await signIn.finalize({
+        navigate: async ({ session }) => {
+          redirectToDashboard(session?.user?.unsafeMetadata.role);
+        },
+      });
+
+      if (finalizeError) throw finalizeError;
+    } catch (error) {
+      setIsError(true);
+      setStatus(
+        error instanceof Error ? error.message : "We couldn't log you in. Please check your credentials and try again."
+      );
+    }
   }
 
-  function handleSocialLogin(provider: "Google" | "GitHub") {
-    setStatus(`${provider} login is ready to activate when Clerk is connected.`);
+  async function handleSocialLogin(provider: "Google" | "GitHub") {
+    setStatus("");
+    setIsError(false);
+
+    if (!signIn) return;
+
+    const { error } = await signIn.sso({
+      strategy: provider === "Google" ? "oauth_google" : "oauth_github",
+      redirectUrl: '/login',
+      redirectCallbackUrl: '/login',
+    });
+
+    if (error) {
+      setIsError(true);
+      setStatus(
+        error instanceof Error ? error.message : `We couldn't log you in with ${provider}. Please try again.`
+      );
+    }
   }
 
   return (
@@ -40,7 +113,7 @@ export function LoginForm() {
             onClick={() => handleSocialLogin("Google")}
             className="flex h-12 cursor-pointer items-center justify-center gap-3 rounded-xl border border-black/13 bg-white px-4 text-sm font-semibold text-[#30332f] transition hover:border-black/20 hover:bg-[#f8f9f7] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#4c7849]"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
               <path
                 fill="#4285F4"
                 d="M21.6 12.23c0-.71-.06-1.4-.18-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.53h3.24c1.9-1.75 2.98-4.33 2.98-7.39Z"
@@ -68,7 +141,7 @@ export function LoginForm() {
           >
             <svg
               viewBox="0 0 24 24"
-              className="h-5 w-5"
+              className="w-5 h-5"
               fill="currentColor"
               aria-hidden="true"
             >
@@ -79,11 +152,11 @@ export function LoginForm() {
         </div>
 
         <div className="flex items-center gap-4 py-1">
-          <span className="h-px flex-1 bg-black/10"></span>
+          <span className="flex-1 h-px bg-black/10"></span>
           <span className="text-xs font-medium text-[#8a8e87]">
             or continue with email
           </span>
-          <span className="h-px flex-1 bg-black/10"></span>
+          <span className="flex-1 h-px bg-black/10"></span>
         </div>
 
         <label className="grid gap-2 text-sm font-semibold text-[#30332f]">
@@ -139,21 +212,20 @@ export function LoginForm() {
 
         <button
           type="submit"
+          disabled={isLoading}
           className="h-12 w-full cursor-pointer rounded-xl bg-[#252724] text-sm font-semibold text-white shadow-sm transition hover:bg-[#3b3e39] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#4c7849]"
         >
-          Log in
+          {isLoading ? "Logging in..." : "Log in"}
         </button>
-
         {status && (
           <p
-            className="rounded-xl bg-[#edf5eb] px-4 py-3 text-center text-xs font-medium text-[#4e704b]"
-            role="status"
+            className={`rounded-xl px-4 text-center text-xs font-medium ${isError ? "bg-[#fffoee] text-[#914d45]" : "bg-[#edf5eb] text-[#3e704b]"} `}
+            role={isError ? "alert" : "status"}
           >
             {status}
           </p>
         )}
       </form>
-
       <p className="mt-7 text-center text-sm text-[#555952]">
         New to OneMarketplace?{" "}
         <Link

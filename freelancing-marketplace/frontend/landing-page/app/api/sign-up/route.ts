@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
             return redirectToError(request, 'backend_signup_failed');
         }
 
-        const dashboardUrl = role === 'client' ? process.env.CLIENT_DASHBOARD : process.env.FREELANCER_DASHBOARD;
+        const dashboardUrl = role === 'client' ? process.env.NEXT_PUBLIC_CLIENT_DASHBOARD : process.env.NEXT_PUBLIC_FREELANCER_DASHBOARD;
 
         if (!dashboardUrl) {
             console.error('Dashboard URL is not defined in environment variables');
