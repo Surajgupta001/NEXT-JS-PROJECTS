@@ -18,7 +18,7 @@ export const accounts = pgTable("accounts", {
 
 export const client_metadata = pgTable("client_metadata", {
     id: uuid("id").defaultRandom().primaryKey(),
-    auth_id: text("auth_id").notNull(),
+    auth_id: text("auth_id").notNull().unique(),
     role: text("role").notNull(),
     company_name: text("company_name").notNull(),
     company_website: text("company_website").notNull(),

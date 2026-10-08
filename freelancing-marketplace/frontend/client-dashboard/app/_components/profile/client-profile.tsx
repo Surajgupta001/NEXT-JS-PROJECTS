@@ -2,13 +2,244 @@
 
 import { Icon } from "@iconify/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState, SubmitEvent } from "react";
 import { completedClientContracts } from "../data/client-data";
+import Image from "next/image";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { countries } from "@/utils/countries";
+import { toast } from "sonner";
+
+interface ClientProfilePayload {
+  professionalRole: string;
+  companyName: string;
+  companyWebsite: string;
+  companySize: string;
+  industry: string;
+  companyDescription: string;
+  identityVerified?: boolean;
+  paymentMethodVerified?: boolean;
+  joinedAt?: Date;
+};
+
+interface SaveClientProfileResponse {
+  success: boolean;
+  message: string;
+}
+
+interface ClientProfileMetadataResponse extends SaveClientProfileResponse {
+  data: ClientProfilePayload | null;
+};
+
+const industryOptions = [
+  "Healthcare technology",
+  "Software & technology",
+  "Financial services",
+  "Retail & e-commerce",
+  "Education",
+  "Media & entertainment",
+  "Professional services",
+  "Manufacturing",
+  "Real estate",
+  "Nonprofit",
+] as const;
 
 export function ClientProfile({ editing = false }: { editing?: boolean }) {
+
+  const { user } = useUser();
+  const { getToken } = useAuth();
+
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  const formRef = useRef<HTMLFormElement>(null);
+
   const [saved, setSaved] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [industry, setIndustry] = useState("Healthcare technology");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarError, setAvatarError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFormComplete, setIsFormComplete] = useState(false);
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+
+  const { data: profileMetadata, isLoading: profileMetaDataLoading } = useQuery({
+    queryKey: ['profile-metadata'],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const token = await getToken();
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/client/profile?role=client`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+
+      const result = await response.json() as ClientProfileMetadataResponse;
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to fetch client profile metadata');
+      }
+
+      return result.data;
+    }
+  });
+
+  const savedIndustry = profileMetadata?.industry;
+  const industry = selectedIndustry ?? (savedIndustry ? industryOptions.some((option) => option === savedIndustry) ? savedIndustry : "Other" : 'Software & technology');
+
+  const saveClientProfileMutation = useMutation({
+    mutationFn: async (payload: ClientProfilePayload) => {
+      const token = await getToken();
+
+      if (!token) {
+        throw new Error('Your session has expired. Please log in again.');
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/client/profile?role=client`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json() as SaveClientProfileResponse;
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to save client profile metadata');
+      }
+
+      return result;
+    },
+
+    onSuccess: (_result, payload) => {
+      queryClient.setQueryData(['profile-metadata'], payload);
+    },
+  });
+
+  const validateForm = useCallback(() => {
+    const form = formRef.current;
+
+    if (!form) return;
+
+    const requiredFields = Array.from(form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('[required]'));
+
+    const hasAllRequiredValues = requiredFields.every((field) => field.value.trim().length > 0);
+
+    const hasAvatar = Boolean(avatarUrl || user?.imageUrl);
+
+    const isComplete = form.checkValidity() && hasAllRequiredValues && hasAvatar;
+
+    setIsFormComplete(isComplete);
+
+    return isComplete;
+  }, [avatarFile, user?.hasImage]);
+
+  useEffect(() => {
+    validateForm();
+  }, [industry, validateForm]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarUrl) {
+        URL.revokeObjectURL(avatarUrl);
+      }
+    };
+  }, [avatarUrl]);
+
+  const handleAvatarChange = (file?: File) => {
+    setSaved(false);
+    setAvatarError('');
+
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!allowedTypes.includes(file.type)) {
+      setAvatarFile(null);
+      setAvatarUrl('');
+      setFormError('Invalid file type. Please upload a JPG, PNG, or WebP image.');
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarUrl(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaved(false);
+    setFormError('');
+
+    if (!user) {
+      setFormError('Your authentication user could not be loaded. Please log in again.');
+      return;
+    }
+
+    if (!validateForm()) {
+      event.currentTarget.reportValidity();
+      setFormError(
+        user?.hasImage || avatarUrl
+          ? 'Complete all required fields before saving your profile.'
+          : 'Please upload an avatar and complete all required fields before saving your profile.'
+      );
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const firstName = String(formData.get('firstName') || '').trim();
+    const lastName = String(formData.get('lastName') || '').trim();
+    const location = String(formData.get('location') || '').trim();
+    const selectedIndustry = String(formData.get('industry') || '').trim();
+    const customIndustry = String(formData.get('customIndustry') || '').trim();
+
+    const profilePayload: ClientProfilePayload = {
+      professionalRole: String(formData.get('jobRole') || '').trim(),
+      companyName: String(formData.get('companyName') || '').trim(),
+      companyWebsite: String(formData.get('companyWebsite') || '').trim(),
+      companySize: String(formData.get('companySize') || '').trim(),
+      industry: selectedIndustry === 'Other' ? customIndustry : selectedIndustry,
+      companyDescription: String(formData.get('companyDescription') || '').trim(),
+    };
+
+    setIsSubmitting(true);
+
+    try {
+      if (avatarFile) {
+        await user.setProfileImage({ file: avatarFile });
+      }
+
+      await user.update({
+        firstName,
+        lastName,
+      });
+
+      await user.updateMetadata({
+        unsafeMetadata: {
+          ...(user.unsafeMetadata ?? {}),
+          country: location,
+        },
+      });
+
+      await saveClientProfileMutation.mutateAsync(profilePayload);
+
+      setSaved(true);
+      toast.success('Client profile changes saved successfully.');
+      router.push('/profile');
+    } catch (error) {
+      console.error('Client Profile update failed', error);
+      setFormError(error instanceof Error ? error.message : 'We could not save your profile changes. Please try again later.')
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!user || profileMetaDataLoading) {
+    return <ProfileSkeleton editing={editing} />;
+  }
 
   return (
     <>
@@ -28,11 +259,10 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
         </div>
         <Link
           href={editing ? "/profile" : "/profile/edit"}
-          className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold ${
-            editing
-              ? "border border-black/10 bg-white"
-              : "bg-[#252724] text-white"
-          }`}
+          className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold ${editing
+            ? "border border-black/10 bg-white"
+            : "bg-[#252724] text-white"
+            }`}
         >
           <Icon
             icon={editing ? "solar:eye-linear" : "solar:pen-2-linear"}
@@ -53,37 +283,34 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
 
       {editing ? (
         <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            setSaved(true);
+          onSubmit={handleSubmit}
+          ref={formRef}
+          onInput={() => {
+            setSaved(false);
+            validateForm();
           }}
-          className="mt-8 grid gap-5"
+          className="grid gap-5 mt-8"
         >
-          <section className="rounded-2xl border border-black/8 bg-white p-5 sm:p-6">
+          <section className="p-5 bg-white border rounded-2xl border-black/8 sm:p-6">
             <h2 className="font-semibold">Profile identity</h2>
             <p className="mt-1 text-xs text-[#7b8078]">
               Your photo and personal details identify the owner of the client
               account.
             </p>
             <div className="mt-5 flex flex-col gap-4 rounded-xl bg-[#f4f6f2] p-4 sm:flex-row sm:items-center">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarUrl}
-                  alt="Client avatar preview"
-                  className="h-20 w-20 rounded-full object-cover"
-                />
-              ) : (
-                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[#496e67] text-xl font-semibold text-white">
-                  OB
-                </span>
-              )}
+              <Image
+                src={avatarUrl || user?.imageUrl}
+                width={90}
+                height={90}
+                alt='Client avatar preview'
+                className="object-cover w-20 h-20 rounded-full"
+              />
               <div>
                 <h3 className="text-sm font-semibold">Profile photo</h3>
                 <p className="mt-1 text-xs text-[#7b8078]">
                   Upload a square JPG, PNG, or WebP image.
                 </p>
-                <label className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-black/10 bg-white px-3 text-xs font-semibold">
+                <label className="inline-flex items-center gap-2 px-3 mt-3 text-xs font-semibold bg-white border rounded-lg cursor-pointer h-9 border-black/10">
                   <Icon icon="solar:camera-linear" width="17" />
                   Change photo
                   <input
@@ -91,39 +318,76 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
                     accept="image/png,image/jpeg,image/webp"
                     className="sr-only"
                     onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) setAvatarUrl(URL.createObjectURL(file));
+                      handleAvatarChange(event.target.files?.[0]);
                     }}
                   />
                 </label>
+                <p className='inline-flex pl-2 items-center gap-1.5 text-xs text-[#6f756d]'>
+                  <Icon
+                    icon='solar:shield-check-linear'
+                    width='15'
+                    className='shrink-0 text-[#5b8658]'
+                  />
+                  Please use your real photo to avoid unnecessary account restrictions.
+                </p>
               </div>
+              {avatarError && (
+                <p className="mt-2 text-xs font-medium text-[#a34f49]">
+                  {avatarError}
+                </p>
+              )}
             </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Field label="First name" defaultValue="Olivia" />
-              <Field label="Last name" defaultValue="Bennett" />
-              <Field label="Role" defaultValue="Head of Product" />
-              <Field
-                label="Location"
-                defaultValue="San Francisco, United States"
-              />
+            <div className="grid gap-4 mt-5 sm:grid-cols-2">
+              <Field label="First name *" defaultValue={user.firstName || 'N/A'} name="firstName" placeholder="First name" />
+              <Field label="Last name *" defaultValue={user.lastName || 'N/A'} name="lastName" placeholder="Last name" />
+              <Field label="Role *" defaultValue={profileMetadata?.professionalRole ?? ''} name='jobRole' placeholder='Managing Director' />
+              <label className='text-xs font-semibold'>
+                Location *
+                <select
+                  name="location"
+                  required
+                  defaultValue={(() => {
+                    const savedCountry = user?.unsafeMetadata?.country;
+
+                    if (typeof savedCountry !== 'string') return '';
+
+                    return countries.find(
+                      (country) => country.code === savedCountry || country.name === savedCountry,
+                    )?.code ?? '';
+                  })()}
+                  className='w-full mt-2 border h-11 rounded-xl border-black/10 bg-white px-3 text-sm font-normal outline-none focus:border-[#6e916a]'
+                >
+                  <option value="" disabled>
+                    Select your country
+                  </option>
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           </section>
 
-          <section className="rounded-2xl border border-black/8 bg-white p-5 sm:p-6">
+          <section className="p-5 bg-white border rounded-2xl border-black/8 sm:p-6">
             <h2 className="font-semibold">Company information</h2>
             <p className="mt-1 text-xs text-[#7b8078]">
               This information is attached to public job posts and proposals.
             </p>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Field label="Company name" defaultValue="Wellmade Health" />
+            <div className="grid gap-4 mt-5 sm:grid-cols-2">
+              <Field label="Company name *" defaultValue={profileMetadata?.companyName || ''} name="companyName" placeholder='Acme Ltd.' />
               <Field
-                label="Company website"
+                label="Company website *"
+                name="companyWebsite"
                 type="url"
-                defaultValue="https://wellmade.health"
+                defaultValue={profileMetadata?.companyWebsite || ''}
+                placeholder="https://www.acme.com"
               />
               <SelectField
-                label="Company size"
-                defaultValue="51–200 employees"
+                label="Company size *"
+                name='companySize'
+                defaultValue={profileMetadata?.companySize || 'Just me'}
                 options={[
                   "Just me",
                   "2–10 employees",
@@ -136,70 +400,68 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
                 ]}
               />
               <label className="text-xs font-semibold">
-                Industry
+                Industry *
                 <select
                   value={industry}
-                  onChange={(event) => setIndustry(event.target.value)}
+                  name='industry'
+                  required
+                  onChange={(event) => setSelectedIndustry(event.target.value)}
                   className="mt-2 h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-normal outline-none focus:border-[#6e916a]"
                 >
-                  {[
-                    "Healthcare technology",
-                    "Software & technology",
-                    "Financial services",
-                    "Retail & e-commerce",
-                    "Education",
-                    "Media & entertainment",
-                    "Professional services",
-                    "Manufacturing",
-                    "Real estate",
-                    "Nonprofit",
-                    "Other",
-                  ].map((option) => (
+                  {[...industryOptions, 'Other'].map((option) => (
                     <option key={option}>{option}</option>
                   ))}
                 </select>
               </label>
               {industry === "Other" && (
                 <Field
-                  label="Custom industry"
-                  defaultValue=""
+                  label="Custom industry *"
+                  name='customIndustry'
+                  defaultValue={profileMetadata && !industryOptions.some((option) => option === profileMetadata.industry) ? profileMetadata.industry : ''}
                   placeholder="Enter your industry"
                 />
               )}
             </div>
-            <label className="mt-4 block text-xs font-semibold">
-              Company description
+            <label className="block mt-4 text-xs font-semibold">
+              Company description *
               <textarea
+                name="companyDescription"
                 rows={5}
-                defaultValue="Wellmade Health builds collaborative software that helps clinical teams coordinate care and make better operational decisions."
+                required
+                defaultValue={profileMetadata?.companyDescription || ''}
+                placeholder="Describe your company"
                 className="mt-2 w-full resize-none rounded-xl border border-black/10 p-3 text-sm font-normal outline-none focus:border-[#6e916a]"
               />
             </label>
           </section>
-
+          {formError && (
+            <p className="text-sm font-medium text-[#a34f49]">{formError}</p>
+          )}
           <div className="flex justify-end gap-2">
-            <Link
-              href="/profile"
-              className="h-11 rounded-xl border border-black/10 bg-white px-5 text-sm font-semibold"
+            <button
+              type="button"
+              onClick={() => router.push('/profile')}
+              className="px-5 text-sm font-semibold bg-white border h-11 rounded-xl border-black/10"
             >
               Cancel
-            </Link>
+            </button>
             <button
               type="submit"
-              className="h-11 rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white"
+              disabled={isSubmitting || !isFormComplete || saveClientProfileMutation.isPending}
+              className="h-11 rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white disabled:opacity-40"
             >
-              Save profile
+              {isSubmitting ? 'Saving...' : 'Save profile'}
             </button>
           </div>
         </form>
       ) : (
-        <ProfilePreview avatarUrl={avatarUrl} />
+        <ProfilePreview profileMetadata={profileMetadata} avatarUrl={avatarUrl} />
       )}
     </>
   );
 }
 
-function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
+function ProfilePreview({ profileMetadata, avatarUrl }: { profileMetadata: ClientProfilePayload | null | undefined; avatarUrl: string }) {
   const contractsPerPage = 2;
   const [contractPage, setContractPage] = useState(1);
   const totalContractPages = Math.ceil(
@@ -218,13 +480,12 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
   return (
     <div className="mt-8 grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
       <aside className="grid gap-4 lg:sticky lg:top-24">
-        <section className="rounded-2xl border border-black/8 bg-white p-6 text-center">
+        <section className="p-6 text-center bg-white border rounded-2xl border-black/8">
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={avatarUrl}
               alt="Olivia Bennett"
-              className="mx-auto h-28 w-28 rounded-full object-cover"
+              className="object-cover mx-auto rounded-full h-28 w-28"
             />
           ) : (
             <span className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-[#496e67] text-2xl font-semibold text-white">
@@ -252,7 +513,7 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
               <span>San Francisco, United States</span>
             </span>
           </div>
-          <div className="mt-5 border-t border-black/7 pt-5">
+          <div className="pt-5 mt-5 border-t border-black/7">
             <span className="inline-flex items-center gap-2 rounded-full bg-[#e8f3e5] px-3 py-2 text-xs font-semibold text-[#4d784a]">
               <Icon icon="solar:verified-check-bold" width="17" />
               Payment method verified
@@ -260,9 +521,9 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-black/8 bg-white p-5">
+        <section className="p-5 bg-white border rounded-2xl border-black/8">
           <h2 className="text-sm font-semibold">Hiring activity</h2>
-          <dl className="mt-4 grid gap-4">
+          <dl className="grid gap-4 mt-4">
             <SidebarDetail label="Open jobs" value="2" />
             <SidebarDetail label="Total hires" value="31" />
             <SidebarDetail label="Hire rate" value="72%" />
@@ -270,9 +531,9 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
           </dl>
         </section>
 
-        <section className="rounded-2xl border border-black/8 bg-white p-5">
+        <section className="p-5 bg-white border rounded-2xl border-black/8">
           <h2 className="text-sm font-semibold">Company details</h2>
-          <dl className="mt-4 grid gap-4">
+          <dl className="grid gap-4 mt-4">
             <SidebarDetail label="Industry" value="Healthcare technology" />
             <SidebarDetail label="Company size" value="51–200" />
             <SidebarDetail label="Member since" value="2024" />
@@ -290,7 +551,7 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
       </aside>
 
       <div className="grid gap-6">
-        <section className="rounded-2xl border border-black/8 bg-white p-6 sm:p-8">
+        <section className="p-6 bg-white border rounded-2xl border-black/8 sm:p-8">
           <p className="text-xs font-semibold tracking-[.13em] text-[#62805f] uppercase">
             About the company
           </p>
@@ -299,7 +560,7 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
             Wellmade Health builds collaborative software that helps clinical
             teams coordinate care and make better operational decisions.
           </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 mt-6 sm:grid-cols-3">
             <Info label="Industry" value="Healthcare technology" />
             <Info label="Company size" value="51–200 employees" />
             <Info label="Member since" value="2024" />
@@ -310,12 +571,12 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
           <InfoCard value="26" label="Contracts completed" />
           <InfoCard value="4.9" label="Talent rating" />
         </section>
-        <section className="overflow-hidden rounded-2xl border border-black/8 bg-white">
-          <header className="border-b border-black/7 p-5 sm:p-6">
+        <section className="overflow-hidden bg-white border rounded-2xl border-black/8">
+          <header className="p-5 border-b border-black/7 sm:p-6">
             <p className="text-[10px] font-semibold tracking-[.13em] text-[#62805f] uppercase">
               Work history
             </p>
-            <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap items-end justify-between gap-3 mt-2">
               <div>
                 <h2 className="text-xl font-semibold">Completed contracts</h2>
                 <p className="mt-1 text-xs text-[#7b8078]">
@@ -349,7 +610,7 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                <div className="grid gap-3 mt-5 lg:grid-cols-2">
                   <ReviewCard
                     label={`Olivia’s review of ${contract.talent}`}
                     review={contract.clientReview}
@@ -395,11 +656,10 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
                       contractPage === pageNumber ? "page" : undefined
                     }
                     onClick={() => openContractPage(pageNumber)}
-                    className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-xs font-semibold ${
-                      contractPage === pageNumber
-                        ? "bg-[#edf4ea] text-[#4e774b]"
-                        : "hover:bg-black/4"
-                    }`}
+                    className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-xs font-semibold ${contractPage === pageNumber
+                      ? "bg-[#edf4ea] text-[#4e774b]"
+                      : "hover:bg-black/4"
+                      }`}
                   >
                     {pageNumber}
                   </button>
@@ -421,14 +681,17 @@ function ProfilePreview({ avatarUrl }: { avatarUrl: string }) {
       </div>
     </div>
   );
-}
+};
+
 
 function Field({
   label,
+  name,
   defaultValue,
   type = "text",
   placeholder,
 }: {
+  name: string;
   label: string;
   defaultValue: string;
   type?: string;
@@ -438,14 +701,17 @@ function Field({
     <label className="text-xs font-semibold">
       {label}
       <input
+        name={name}
         type={type}
         defaultValue={defaultValue}
         placeholder={placeholder}
+        required
         className="mt-2 h-11 w-full rounded-xl border border-black/10 px-3 text-sm font-normal outline-none focus:border-[#6e916a]"
       />
     </label>
   );
-}
+};
+
 
 function ProfileSkeleton({ editing }: { editing: boolean }) {
   return (
@@ -465,25 +731,25 @@ function ProfileSkeleton({ editing }: { editing: boolean }) {
       </header>
 
       {editing ? (
-        <div className="mt-8 grid gap-5">
+        <div className="grid gap-5 mt-8">
           <EditSectionSkeleton includeAvatar />
           <EditSectionSkeleton />
         </div>
       ) : (
         <div className="mt-8 grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
           <aside className="grid gap-4">
-            <section className="rounded-2xl border border-black/6 bg-white p-6">
+            <section className="p-6 bg-white border rounded-2xl border-black/6">
               <div className="mx-auto h-28 w-28 rounded-full bg-[#dce4d9]" />
               <div className="mx-auto mt-5 h-6 w-40 rounded-md bg-[#dfe5dc]" />
               <div className="mx-auto mt-3 h-3 w-48 rounded-full bg-[#e9ede7]" />
               <div className="mx-auto mt-3 h-3 w-32 rounded-full bg-[#e9ede7]" />
-              <div className="mt-5 border-t border-black/6 pt-5">
+              <div className="pt-5 mt-5 border-t border-black/6">
                 <div className="mx-auto h-8 w-44 rounded-full bg-[#e4ebe1]" />
               </div>
             </section>
-            <section className="rounded-2xl border border-black/6 bg-white p-5">
+            <section className="p-5 bg-white border rounded-2xl border-black/6">
               <div className="h-4 w-28 rounded bg-[#dfe5dc]" />
-              <div className="mt-5 grid gap-4">
+              <div className="grid gap-4 mt-5">
                 {[0, 1, 2, 3].map((item) => (
                   <div key={item} className="flex justify-between gap-5">
                     <div className="h-3 w-20 rounded-full bg-[#e9ede7]" />
@@ -495,12 +761,12 @@ function ProfileSkeleton({ editing }: { editing: boolean }) {
           </aside>
 
           <main className="grid gap-6">
-            <section className="rounded-2xl border border-black/6 bg-white p-6 sm:p-8">
+            <section className="p-6 bg-white border rounded-2xl border-black/6 sm:p-8">
               <div className="h-3 w-28 rounded-full bg-[#dfe5dc]" />
               <div className="mt-4 h-7 w-64 rounded-lg bg-[#dfe5dc]" />
               <div className="mt-5 h-3 w-full rounded-full bg-[#e9ede7]" />
               <div className="mt-3 h-3 w-4/5 rounded-full bg-[#e9ede7]" />
-              <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 mt-7 sm:grid-cols-3">
                 {[0, 1, 2].map((item) => (
                   <div key={item} className="h-16 rounded-xl bg-[#f0f3ee]" />
                 ))}
@@ -510,14 +776,14 @@ function ProfileSkeleton({ editing }: { editing: boolean }) {
               {[0, 1, 2].map((item) => (
                 <div
                   key={item}
-                  className="h-24 rounded-2xl border border-black/6 bg-white p-5"
+                  className="h-24 p-5 bg-white border rounded-2xl border-black/6"
                 >
                   <div className="h-6 w-20 rounded bg-[#dfe5dc]" />
                   <div className="mt-3 h-3 w-28 rounded-full bg-[#e9ede7]" />
                 </div>
               ))}
             </section>
-            <section className="h-72 rounded-2xl border border-black/6 bg-white p-6">
+            <section className="p-6 bg-white border h-72 rounded-2xl border-black/6">
               <div className="h-5 w-44 rounded bg-[#dfe5dc]" />
               <div className="mt-3 h-3 w-64 rounded-full bg-[#e9ede7]" />
               <div className="mt-8 h-28 rounded-xl bg-[#f0f3ee]" />
@@ -528,15 +794,12 @@ function ProfileSkeleton({ editing }: { editing: boolean }) {
       <span className="sr-only">Loading profile information</span>
     </div>
   );
-}
+};
 
-function EditSectionSkeleton({
-  includeAvatar = false,
-}: {
-  includeAvatar?: boolean;
-}) {
+
+function EditSectionSkeleton({ includeAvatar = false }: { includeAvatar?: boolean }) {
   return (
-    <section className="rounded-2xl border border-black/6 bg-white p-5 sm:p-6">
+    <section className="p-5 bg-white border rounded-2xl border-black/6 sm:p-6">
       <div className="h-5 w-40 rounded-md bg-[#dfe5dc]" />
       <div className="mt-2 h-3 w-72 max-w-full rounded-full bg-[#e9ede7]" />
       {includeAvatar && (
@@ -545,11 +808,11 @@ function EditSectionSkeleton({
           <div className="w-full max-w-sm">
             <div className="h-4 w-28 rounded bg-[#dfe5dc]" />
             <div className="mt-2 h-3 w-52 rounded-full bg-[#e5eae2]" />
-            <div className="mt-3 h-9 w-28 rounded-lg bg-white" />
+            <div className="mt-3 bg-white rounded-lg h-9 w-28" />
           </div>
         </div>
       )}
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 mt-5 sm:grid-cols-2">
         {[0, 1, 2, 3].map((item) => (
           <div key={item}>
             <div className="h-3 w-20 rounded-full bg-[#dfe5dc]" />
@@ -560,13 +823,16 @@ function EditSectionSkeleton({
       {!includeAvatar && <div className="mt-4 h-28 rounded-xl bg-[#f0f3ee]" />}
     </section>
   );
-}
+};
+
 
 function SelectField({
+  name,
   label,
   defaultValue,
   options,
 }: {
+  name: string;
   label: string;
   defaultValue: string;
   options: string[];
@@ -575,6 +841,7 @@ function SelectField({
     <label className="text-xs font-semibold">
       {label}
       <select
+        name={name}
         defaultValue={defaultValue}
         className="mt-2 h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-normal outline-none focus:border-[#6e916a]"
       >
@@ -584,7 +851,8 @@ function SelectField({
       </select>
     </label>
   );
-}
+};
+
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
@@ -593,16 +861,18 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="mt-1 text-xs font-semibold">{value}</p>
     </div>
   );
-}
+};
+
 
 function InfoCard({ value, label }: { value: string; label: string }) {
   return (
-    <article className="rounded-2xl border border-black/8 bg-white p-5">
+    <article className="p-5 bg-white border rounded-2xl border-black/8">
       <p className="text-2xl font-semibold">{value}</p>
       <p className="mt-1 text-xs text-[#7b8078]">{label}</p>
     </article>
   );
-}
+};
+
 
 function SidebarDetail({ label, value }: { label: string; value: string }) {
   return (
@@ -611,7 +881,8 @@ function SidebarDetail({ label, value }: { label: string; value: string }) {
       <dd className="text-right font-semibold text-[#414640]">{value}</dd>
     </div>
   );
-}
+};
+
 
 function ReviewCard({
   label,
@@ -625,7 +896,7 @@ function ReviewCard({
       <p className="text-[10px] font-semibold text-[#71776f]">{label}</p>
       {review ? (
         <>
-          <p className="mt-2 flex items-center gap-1 text-xs font-semibold">
+          <p className="flex items-center gap-1 mt-2 text-xs font-semibold">
             <Icon
               icon="solar:star-bold"
               width="15"
@@ -642,4 +913,4 @@ function ReviewCard({
       )}
     </div>
   );
-}
+};
