@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { countries } from "@/utils/countries";
 import { toast } from "sonner";
+import { UserResource } from "@clerk/nextjs/types";
 
 interface ClientProfilePayload {
   professionalRole: string;
@@ -455,13 +456,18 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
           </div>
         </form>
       ) : (
-        <ProfilePreview profileMetadata={profileMetadata} avatarUrl={avatarUrl} />
+        <ProfilePreview profileMetadata={profileMetadata} user={user} />
       )}
     </>
   );
 }
 
-function ProfilePreview({ profileMetadata, avatarUrl }: { profileMetadata: ClientProfilePayload | null | undefined; avatarUrl: string }) {
+function ProfilePreview({
+  profileMetadata, user
+}: {
+  profileMetadata: ClientProfilePayload | null | undefined;
+  user: UserResource
+}) {
   const contractsPerPage = 2;
   const [contractPage, setContractPage] = useState(1);
   const totalContractPages = Math.ceil(
@@ -481,27 +487,25 @@ function ProfilePreview({ profileMetadata, avatarUrl }: { profileMetadata: Clien
     <div className="mt-8 grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
       <aside className="grid gap-4 lg:sticky lg:top-24">
         <section className="p-6 text-center bg-white border rounded-2xl border-black/8">
-          {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt="Olivia Bennett"
-              className="object-cover mx-auto rounded-full h-28 w-28"
-            />
-          ) : (
-            <span className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-[#496e67] text-2xl font-semibold text-white">
-              OB
-            </span>
-          )}
+          <Image
+            src={user?.imageUrl || ''}
+            width={90}
+            height={90}
+            alt="Olivia Bennett"
+            className="object-cover mx-auto rounded-full h-28 w-28"
+          />
           <h2 className="mt-5 inline-flex items-center justify-center gap-1.5 text-xl font-semibold">
-            Olivia Bennett
-            <Icon
-              icon="solar:verified-check-bold"
-              width="19"
-              className="text-[#5b8658]"
-            />
+            {user?.firstName}
+            {profileMetadata?.identityVerified && (
+              <Icon
+                icon="solar:verified-check-bold"
+                width="19"
+                className="text-[#5b8658]"
+              />
+            )}
           </h2>
           <p className="mt-1 text-sm text-[#747a72]">
-            Head of Product · Wellmade Health
+            {profileMetadata?.professionalRole} · {profileMetadata?.companyName}
           </p>
           <div className="mt-3 flex justify-center text-xs text-[#858a82]">
             <span className="inline-flex max-w-56 items-start gap-1.5 text-center">
@@ -510,14 +514,32 @@ function ProfilePreview({ profileMetadata, avatarUrl }: { profileMetadata: Clien
                 width="16"
                 className="mt-px shrink-0"
               />
-              <span>San Francisco, United States</span>
+              <span>
+                {countries.find((country) => country.code === user?.unsafeMetadata?.country)?.name || ''}
+              </span>
             </span>
           </div>
           <div className="pt-5 mt-5 border-t border-black/7">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#e8f3e5] px-3 py-2 text-xs font-semibold text-[#4d784a]">
-              <Icon icon="solar:verified-check-bold" width="17" />
-              Payment method verified
-            </span>
+            {profileMetadata?.paymentMethodVerified ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#e8f3e5] px-3 py-2 text-xs font-semibold text-[#4d784a]">
+                <Icon icon="solar:verified-check-bold" width="17" />
+                Payment method verified
+              </span>
+            ) : (
+              <div className="flex flex-col items-center gap-2.5">
+                <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#a34f49]">
+                  <Icon icon="solar:close-circle-linear" width="16" />
+                  Payment method not verified
+                </p>
+                <Link
+                  href='/settings?section=finances'
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#d8aaa6] bg-[#fff8f7] px-3 text-xs font-semibold text-[#914a45] transition hover:bg-[#fcecea]"
+                >
+                  Add payment method
+                  <Icon icon="solar:arrow-right-up-linear" width="14" />
+                </Link>
+              </div>
+            )}
           </div>
         </section>
 
@@ -534,17 +556,17 @@ function ProfilePreview({ profileMetadata, avatarUrl }: { profileMetadata: Clien
         <section className="p-5 bg-white border rounded-2xl border-black/8">
           <h2 className="text-sm font-semibold">Company details</h2>
           <dl className="grid gap-4 mt-4">
-            <SidebarDetail label="Industry" value="Healthcare technology" />
-            <SidebarDetail label="Company size" value="51–200" />
-            <SidebarDetail label="Member since" value="2024" />
+            <SidebarDetail label="Industry" value={profileMetadata?.industry || 'N/A'} />
+            <SidebarDetail label="Company size" value={profileMetadata?.companyName || 'Just me'} />
+            <SidebarDetail label="Member since" value={profileMetadata?.joinedAt?.toString().slice(0, 4) || '2026'} />
           </dl>
           <a
-            href="https://wellmade.health"
+            href={profileMetadata?.companyWebsite}
             target="_blank"
             rel="noreferrer"
             className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#52784f] hover:underline"
           >
-            wellmade.health
+            {profileMetadata?.companyWebsite}
             <Icon icon="solar:arrow-right-up-linear" width="14" />
           </a>
         </section>
@@ -555,21 +577,20 @@ function ProfilePreview({ profileMetadata, avatarUrl }: { profileMetadata: Clien
           <p className="text-xs font-semibold tracking-[.13em] text-[#62805f] uppercase">
             About the company
           </p>
-          <h2 className="mt-3 text-2xl font-semibold">Wellmade Health</h2>
+          <h2 className="mt-3 text-2xl font-semibold">{profileMetadata?.companyName}</h2>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-[#676e66]">
-            Wellmade Health builds collaborative software that helps clinical
-            teams coordinate care and make better operational decisions.
+            {profileMetadata?.companyDescription}
           </p>
           <div className="grid gap-3 mt-6 sm:grid-cols-3">
-            <Info label="Industry" value="Healthcare technology" />
-            <Info label="Company size" value="51–200 employees" />
-            <Info label="Member since" value="2024" />
+            <Info label="Industry" value={profileMetadata?.industry || 'N/A'} />
+            <Info label="Company size" value={profileMetadata?.companySize || 'Just me'} />
+            <Info label="Member since" value={profileMetadata?.joinedAt?.toString().slice(0, 4) || '2026'} />
           </div>
         </section>
         <section className="grid gap-4 sm:grid-cols-3">
           <InfoCard value="$184K" label="Total spent" />
           <InfoCard value="26" label="Contracts completed" />
-          <InfoCard value="4.9" label="Talent rating" />
+          <InfoCard value="4.9" label="Client rating" />
         </section>
         <section className="overflow-hidden bg-white border rounded-2xl border-black/8">
           <header className="p-5 border-b border-black/7 sm:p-6">
