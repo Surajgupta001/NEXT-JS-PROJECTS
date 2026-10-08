@@ -80,20 +80,38 @@ export const SaveClientProfile = async (input: SaveClientProfileInput): Promise<
             throw new ApiError(404, 'Client account not found');
         }
 
-        const [savedProfile] = await tsx.insert(client_metadata).values({
-            auth_id: input.userId,
-            role: input.professionalRole,
-            company_name: input.companyName,
-            company_website: input.companyWebsite,
-            company_size: input.companySize,
-            industry: input.industry,
-            company_description: input.companyDescription,
-            created_At: now,
-            updated_At: now,
-        })
-            .onConflictDoUpdate({
-                target: client_metadata.auth_id,
-                set: {
+        const [existingProfile] = await tsx
+            .select({ id: client_metadata.id })
+            .from(client_metadata)
+            .where(eq(client_metadata.auth_id, input.userId))
+            .limit(1);
+
+        const returning = {
+            professionalRole: client_metadata.role,
+            companyName: client_metadata.company_name,
+            companyWebsite: client_metadata.company_website,
+            companySize: client_metadata.company_size,
+            industry: client_metadata.industry,
+            companyDescription: client_metadata.company_description,
+            joinedAt: client_metadata.created_At,
+        };
+
+        let savedProfile:
+            | {
+                professionalRole: string;
+                companyName: string;
+                companyWebsite: string;
+                companySize: string;
+                industry: string;
+                companyDescription: string;
+                joinedAt: Date | null;
+            }
+            | undefined;
+
+        if (existingProfile) {
+            const [updatedProfile] = await tsx
+                .update(client_metadata)
+                .set({
                     role: input.professionalRole,
                     company_name: input.companyName,
                     company_website: input.companyWebsite,
@@ -101,16 +119,29 @@ export const SaveClientProfile = async (input: SaveClientProfileInput): Promise<
                     industry: input.industry,
                     company_description: input.companyDescription,
                     updated_At: now,
-                },
-            }).returning({
-                professionalRole: client_metadata.role,
-                companyName: client_metadata.company_name,
-                companyWebsite: client_metadata.company_website,
-                companySize: client_metadata.company_size,
-                industry: client_metadata.industry,
-                companyDescription: client_metadata.company_description,
-                joinedAt: client_metadata?.created_At,
-            });
+                })
+                .where(eq(client_metadata.auth_id, input.userId))
+                .returning(returning);
+
+            savedProfile = updatedProfile;
+        } else {
+            const [insertedProfile] = await tsx
+                .insert(client_metadata)
+                .values({
+                    auth_id: input.userId,
+                    role: input.professionalRole,
+                    company_name: input.companyName,
+                    company_website: input.companyWebsite,
+                    company_size: input.companySize,
+                    industry: input.industry,
+                    company_description: input.companyDescription,
+                    created_At: now,
+                    updated_At: now,
+                })
+                .returning(returning);
+
+            savedProfile = insertedProfile;
+        }
 
         if (!savedProfile) {
             throw new ApiError(500, 'Failed to save client profile');

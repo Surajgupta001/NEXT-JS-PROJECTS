@@ -1,0 +1,1 @@
+ALTER TABLE "client_metadata" ADD CONSTRAINT "client_metadata_auth_id_unique" UNIQUE("auth_id");
