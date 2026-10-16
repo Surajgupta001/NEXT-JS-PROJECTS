@@ -8,6 +8,7 @@ import { BrandMark } from "../brand-mark";
 import { clientConversations } from "../data/client-data";
 import { MarketplaceSearchModal } from "../discovery/marketplace-search-modal";
 import { clientHeaderNavigation } from "./navigation";
+import { useClerk } from "@clerk/nextjs";
 
 const notifications = [
   { id: 1, title: "New proposal received", detail: "Northstar Digital applied to your Next.js project.", href: "/proposals", unread: true },
@@ -16,6 +17,7 @@ const notifications = [
 ];
 
 export function ClientHeader() {
+
   const pathname = usePathname();
   const unreadMessages = clientConversations.reduce((sum, item) => sum + item.unread, 0);
 
@@ -103,8 +105,12 @@ function Notifications() {
 }
 
 function AccountMenu() {
+
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const { signOut } = useClerk();
+
   useEffect(() => {
     if (!open) return;
     const close = (event: MouseEvent) => {
@@ -113,6 +119,10 @@ function AccountMenu() {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
+
+  const logoutHandler = async () => {
+    await signOut();
+  };
 
   return (
     <div ref={ref} className="relative">
@@ -152,7 +162,7 @@ function AccountMenu() {
               <span className="min-w-0 flex-1"><strong className="block text-xs">Manage account</strong><span className="mt-1 block text-[9px] font-normal text-[#858a82]">Email, password, and sign-in security</span></span>
               <Icon icon="solar:alt-arrow-right-linear" width="14" className="text-[#8a8f87]" />
             </button>
-            <button type="button" onClick={() => window.location.assign("/login")} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-xs font-semibold text-[#8b5656] hover:bg-[#f8eeee]"><Icon icon="solar:logout-2-linear" width="18" /> Log out</button>
+            <button type="button" onClick={logoutHandler} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-xs font-semibold text-[#8b5656] hover:bg-[#f8eeee]"><Icon icon="solar:logout-2-linear" width="18" /> Log out</button>
           </div>
         </div>
       )}
