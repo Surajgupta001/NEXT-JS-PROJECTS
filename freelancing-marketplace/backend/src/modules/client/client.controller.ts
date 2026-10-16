@@ -3,6 +3,7 @@ import { asynchandler } from "../../utils/async-handler.js";
 import { ApiError } from "../../utils/api-error.js";
 import { ClientMetadataData, ClientProfileData, getClientProfile, SaveClientProfile, SaveClientProfileInput, } from "./client.service.js";
 import { ApiResponse } from "../../types/common.types.js";
+import { requiredText, requireWebsite } from "../../config/constants.js";
 
 export const getLoggedInClientProfile: RequestHandler = asynchandler(async (request, response) => {
 
@@ -31,29 +32,6 @@ interface ClientProfileBody {
     companySize?: string;
     industry?: string;
     companyDescription?: string;
-};
-
-const requiredText = (value: string | undefined, fileName: string): string => {
-    if (typeof value !== "string" || !value.trim()) {
-        throw new ApiError(400, `${fileName} is required and must be a non-empty string.`);
-    }
-
-    return value.trim();
-};
-
-const requireWebsite = (value: string | undefined): string => {
-    const website = requiredText(value, 'Company website');
-
-    try {
-        const url = new URL(website);
-        if (!['http:', 'https:'].includes(url.protocol)) {
-            throw new Error();
-        }
-    } catch {
-        throw new ApiError(400, 'Company website must be a valid URL.');
-    }
-
-    return website;
 };
 
 export const upsertClientProfile: RequestHandler = asynchandler(async (request, response) => {
