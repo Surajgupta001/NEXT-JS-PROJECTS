@@ -40,6 +40,7 @@ export const freelancer_metadata = pgTable("freelancer_metadata", {
     city: text("city").notNull(),
     availability_status: text("availability_status").notNull().default("AVAILABLE"),
     experience_level: text("experience_level").notNull(),
+    weekly_availability: text("weekly_availability").notNull(),
     skills: text("skills").array().notNull().default([]),
     languages: jsonb("languages").$type<Array<{ language: string; proficiency: string }>>().notNull(),
     created_At: timestamp("created_At", { withTimezone: true }).defaultNow(),

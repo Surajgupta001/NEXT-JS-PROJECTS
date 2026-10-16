@@ -1,0 +1,1 @@
+ALTER TABLE "freelancer_metadata" ADD COLUMN "weekly_availability" text NOT NULL;
