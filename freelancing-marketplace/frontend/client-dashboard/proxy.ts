@@ -62,7 +62,7 @@ export default clerkMiddleware(async (auth, request) => {
         return NextResponse.next();
 
     } catch (error) {
-        console.error('Error in proxy middleware:', error);
+        console.error('Client account status check failed:', error);
         return redirectToLandingPage(request);
     }
 });

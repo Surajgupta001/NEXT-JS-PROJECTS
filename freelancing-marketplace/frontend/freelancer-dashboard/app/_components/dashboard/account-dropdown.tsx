@@ -1,5 +1,6 @@
 "use client";
 
+import { useClerk } from "@clerk/nextjs";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -29,6 +30,12 @@ export function AccountDropdown() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const { signOut } = useClerk();
+
+  const logoutHandler = async () => {
+    await signOut();
+  };
+
   useEffect(() => {
     if (!open) return;
 
@@ -46,12 +53,6 @@ export function AccountDropdown() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
-
-  const logOut = () => {
-    window.localStorage.clear();
-    window.sessionStorage.clear();
-    window.location.assign("/login");
-  };
 
   return (
     <div ref={containerRef} className="relative">
@@ -83,12 +84,12 @@ export function AccountDropdown() {
           aria-label="Account menu"
           className="fixed top-17 right-3 z-50 w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-black/8 bg-white shadow-[0_24px_70px_rgba(26,34,26,0.18)] sm:absolute sm:top-12 sm:right-0 sm:w-80"
         >
-          <div className="flex items-center gap-3 border-b border-black/7 p-4">
+          <div className="flex items-center gap-3 p-4 border-b border-black/7">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#496e67] text-sm font-semibold text-white">
               SK
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">Shahriar Sajeeb</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">Shahriar Sajeeb</p>
               <p className="mt-0.5 truncate text-[11px] text-[#7b8078]">
                 Full-stack developer
               </p>
@@ -110,7 +111,7 @@ export function AccountDropdown() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f3ee] text-[#5d765a]">
                   <Icon icon={item.icon} width="19" />
                 </span>
-                <span className="min-w-0 flex-1">
+                <span className="flex-1 min-w-0">
                   <strong className="block text-xs">{item.label}</strong>
                   <span className="mt-0.5 block truncate text-[10px] text-[#858a82]">
                     {item.description}
@@ -125,7 +126,7 @@ export function AccountDropdown() {
             ))}
           </div>
 
-          <div className="border-t border-black/7 p-2">
+          <div className="p-2 border-t border-black/7">
             <Link
               href="/settings?section=agency"
               role="menuitem"
@@ -135,7 +136,7 @@ export function AccountDropdown() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f3ee] text-[#5d765a]">
                 <Icon icon="solar:buildings-2-linear" width="19" />
               </span>
-              <span className="min-w-0 flex-1">
+              <span className="flex-1 min-w-0">
                 <strong className="block text-xs">Create an agency</strong>
                 <span className="mt-0.5 block truncate text-[10px] text-[#858a82]">
                   Build and manage a team
@@ -145,11 +146,11 @@ export function AccountDropdown() {
             </Link>
           </div>
 
-          <div className="border-t border-black/7 p-2">
+          <div className="p-2 border-t border-black/7">
             <button
               type="button"
               role="menuitem"
-              onClick={logOut}
+              onClick={logoutHandler}
               className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-[#8b5656] transition hover:bg-[#f8eeee]"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f7eeee]">
