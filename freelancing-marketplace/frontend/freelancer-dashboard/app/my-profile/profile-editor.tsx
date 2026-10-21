@@ -1,11 +1,17 @@
 "use client";
 
+import { countries } from "@/utils/countries";
+import { getToken, useUser } from "@clerk/nextjs";
 import { Icon } from "@iconify/react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
+import { SubmitEvent, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { SubmitEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DashboardHeader } from "../_components/dashboard/dashboard-header";
+import { ProfileSkeleton } from "./profile-skelton";
+import { useRouter } from "next/navigation";
 
 type PreviewPortfolio = {
   id: number;
@@ -137,9 +143,9 @@ function SectionCard({
   return (
     <section
       id={id}
-      className="scroll-mt-24 rounded-2xl border border-black/8 bg-white p-5 sm:p-7"
+      className="p-5 bg-white border scroll-mt-24 rounded-2xl border-black/8 sm:p-7"
     >
-      <div className="border-b border-black/7 pb-5">
+      <div className="pb-5 border-b border-black/7">
         <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
         <p className="mt-1.5 text-sm leading-6 text-[#747a72]">{description}</p>
       </div>
@@ -185,7 +191,7 @@ function ProfilePreview() {
   return (
     <div className="min-h-svh bg-[#f4f6f2] font-(family-name:--font-dm-sans) text-[#242724]">
       <DashboardHeader />
-      <main className="mx-auto max-w-360 px-5 py-8 sm:px-8 lg:py-10">
+      <main className="px-5 py-8 mx-auto max-w-360 sm:px-8 lg:py-10">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <Link
@@ -210,7 +216,7 @@ function ProfilePreview() {
 
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[290px_minmax(0,1fr)]">
           <aside className="grid gap-5 lg:sticky lg:top-24">
-            <section className="rounded-3xl border border-black/8 bg-white p-6 text-center">
+            <section className="p-6 text-center bg-white border rounded-3xl border-black/8">
               <div className="relative mx-auto h-28 w-28">
                 <span className="flex h-full w-full items-center justify-center rounded-full bg-[#496e67] text-3xl font-semibold text-white">
                   SK
@@ -233,7 +239,7 @@ function ProfilePreview() {
                 Chiang Mai, Thailand
               </p>
 
-              <div className="mt-6 grid grid-cols-3 border-y border-black/7 py-4">
+              <div className="grid grid-cols-3 py-4 mt-6 border-y border-black/7">
                 <div>
                   <strong className="block">100%</strong>
                   <span className="mt-1 block text-[10px] text-[#858a82]">
@@ -258,7 +264,7 @@ function ProfilePreview() {
                 <p className="text-xs font-semibold tracking-wide text-[#7b8078] uppercase">
                   Availability
                 </p>
-                <p className="mt-2 flex items-center gap-2 text-sm font-medium">
+                <p className="flex items-center gap-2 mt-2 text-sm font-medium">
                   <span className="h-2 w-2 rounded-full bg-[#59a05d]" />
                   20–30 hours per week
                 </p>
@@ -297,7 +303,7 @@ function ProfilePreview() {
           </aside>
 
           <div className="grid gap-5">
-            <section className="rounded-3xl border border-black/8 bg-white p-6 sm:p-8">
+            <section className="p-6 bg-white border rounded-3xl border-black/8 sm:p-8">
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.14em] text-[#5c8159] uppercase">
@@ -307,7 +313,7 @@ function ProfilePreview() {
                     I build dependable digital products from idea to production.
                   </h2>
                 </div>
-                <div className="shrink-0 text-left sm:text-right">
+                <div className="text-left shrink-0 sm:text-right">
                   <p className="text-xs text-[#7c8179]">Hourly rate</p>
                   <p className="mt-1 text-xl font-semibold">
                     $85
@@ -330,7 +336,7 @@ function ProfilePreview() {
                   performance to the quality of the final handoff.
                 </p>
               </div>
-              <div className="mt-6 flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mt-6">
                 {initialSkills.map((skill) => (
                   <span
                     key={skill}
@@ -342,7 +348,7 @@ function ProfilePreview() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-black/8 bg-white p-6 sm:p-8">
+            <section className="p-6 bg-white border rounded-3xl border-black/8 sm:p-8">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.14em] text-[#6e756c] uppercase">
@@ -356,11 +362,11 @@ function ProfilePreview() {
                   {initialPortfolio.length} projects
                 </span>
               </div>
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 mt-6 md:grid-cols-2">
                 {initialPortfolio.map((project) => (
                   <article
                     key={project.id}
-                    className="overflow-hidden rounded-2xl border border-black/8"
+                    className="overflow-hidden border rounded-2xl border-black/8"
                   >
                     <div
                       className={`flex h-44 items-center justify-center bg-linear-to-br ${project.color}`}
@@ -398,7 +404,7 @@ function ProfilePreview() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-black/8 bg-white p-6 sm:p-8">
+            <section className="p-6 bg-white border rounded-3xl border-black/8 sm:p-8">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.14em] text-[#6e756c] uppercase">
@@ -410,7 +416,7 @@ function ProfilePreview() {
                 </div>
                 <span className="text-xs text-[#838880]">24 completed</span>
               </div>
-              <div className="mt-6 overflow-hidden rounded-2xl border border-black/8">
+              <div className="mt-6 overflow-hidden border rounded-2xl border-black/8">
                 {completedJobs.map((job, index) => (
                   <article
                     key={job.title}
@@ -423,7 +429,7 @@ function ProfilePreview() {
                           {job.client} · Completed {job.completed}
                         </p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-3">
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className="text-sm font-semibold text-[#d1a238]">
                           ★ <span className="text-[#30342f]">{job.rating}</span>
                         </span>
@@ -435,7 +441,7 @@ function ProfilePreview() {
                     <blockquote className="mt-4 border-l-2 border-[#b8ceb4] pl-4 text-sm leading-6 text-[#687067]">
                       “{job.review}”
                     </blockquote>
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mt-4">
                       {job.skills.map((skill) => (
                         <span
                           key={skill}
@@ -462,12 +468,11 @@ function ProfilePreview() {
   );
 }
 
-export function ProfileEditor({
-  initialEditing = false,
-}: {
-  initialEditing?: boolean;
-}) {
+export function ProfileEditor({ initialEditing = false }: { initialEditing?: boolean }) {
+  
+  const { user, isLoaded } = useUser();
   const isEditing = initialEditing;
+  
   const {
     register,
     handleSubmit,
@@ -478,19 +483,19 @@ export function ProfileEditor({
   } = useForm<FreelancerProfileFormValues>({
     mode: "onChange",
     defaultValues: {
-      firstName: "Shahriar",
-      lastName: "Sajeeb",
-      country: "Thailand",
-      city: "Chiang Mai",
-      professional_title: "Full-stack product engineer · Next.js & TypeScript",
-      professional_description:
-        "I help product teams turn complex ideas into fast, dependable web applications. My work spans product architecture, polished React interfaces, scalable APIs, and production infrastructure. I communicate clearly, ship in thoughtful milestones, and care deeply about the details users feel.",
-      hourly_rate: 85,
+      firstName: "",
+      lastName: "",
+      country: "",
+      city: "",
+      professional_title: "",
+      professional_description: "",
+      hourly_rate: 20,
       availability_status: "AVAILABLE",
       weekly_availability: "20–30 hours / week",
-      experience_level: "Expert",
+      experience_level: "Entry",
     },
   });
+
   const [activeSection, setActiveSection] = useState("profile-details");
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
@@ -501,6 +506,74 @@ export function ProfileEditor({
   const [savedDynamicValues, setSavedDynamicValues] = useState(() =>
     JSON.stringify({ skills: [], languages: initialLanguages, portfolio: [] }),
   );
+
+  const router = useRouter();
+
+  const hasInitialisedProfile = useRef(false);
+
+  const { data: profileMetaData, isLoading: profileMetaDataLoading } = useQuery({
+    queryKey: ['profile-metadata'],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const token = await getToken();
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/freelancer/profile?role=freelancer`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to fetch profile metadata');
+      }
+
+      return result.data;
+    }
+  });
+
+  useEffect(() => {
+    if (!isLoaded || profileMetaDataLoading || !user || hasInitialisedProfile.current) return;
+
+    const nextSkills = profileMetaData?.skills ?? [];
+    const nextLanguages = profileMetaData?.languages?.length > 0 ? profileMetaData.languages : initialLanguages;
+    const nextPortfolio = (profileMetaData?.portfolios ?? []).map(
+      (project: FreelancerPortfolioValue) => ({
+        ...project,
+        client_id: project.client_id || crypto.randomUUID(),
+      }),
+    );
+
+    reset({
+      firstName: user.firstName ?? "",
+      lastName: user.lastName ?? "",
+      country: profileMetaData?.country ?? (user.unsafeMetadata.country as string | undefined) ?? "",
+      city: profileMetaData?.city ?? '',
+      professional_title: profileMetaData?.professional_title ?? '',
+      professional_description: profileMetaData?.professional_description ?? '',
+      hourly_rate: Number(profileMetaData?.hourly_rate ?? 20),
+      availability_status: profileMetaData?.availability_status ?? 'AVAILABLE',
+      weekly_availability: profileMetaData?.weekly_availability ?? '20–30 hours / week',
+      experience_level: profileMetaData?.experience_level ?? 'Entry',
+      skills: nextSkills,
+      languages: nextLanguages,
+      portfolios: nextPortfolio,
+    })
+
+    setSkills(nextSkills);
+    setLanguages(nextLanguages);
+    setPortfolio(nextPortfolio);
+    setSavedDynamicValues(
+      JSON.stringify({
+        skills: nextSkills,
+        languages: nextLanguages,
+        portfolios: nextPortfolio,
+      }),
+    );
+    hasInitialisedProfile.current = true;
+  }, [isLoaded, profileMetaDataLoading, user, profileMetaData, reset]);
 
   const updateLanguage = (index: number, update: Partial<Language>) => {
     setLanguages((current) =>
@@ -572,6 +645,68 @@ export function ProfileEditor({
     setShowPortfolioForm(false);
   };
 
+  const profileMutation = useMutation({
+    mutationFn: async (values: FreelancerProfileFormValues) => {
+      if (!user) throw new Error("Your account could not be loaded.");
+
+      const token = await getToken();
+      if (!token) throw new Error("Your session has expired.");
+
+      const { firstName, lastName, portfolios, ...freelancer_metadata } = values;
+
+      await user.update({
+        firstName,
+        lastName,
+        unsafeMetadata: {
+          ...user.unsafeMetadata,
+          country: values.country,
+        },
+      });
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/freelancer/profile?role=freelancer`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          freelancer_metadata,
+          freelancer_portfolios: portfolios.map(({ client_id: _clientId, ...portfolio }) => portfolio),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to update profile.");
+      }
+
+      return result.data;
+    },
+
+    onSuccess: (_profile, values) => {
+      reset(values);
+      setSavedDynamicValues(
+        JSON.stringify({
+          skills: values.skills,
+          languages: values.languages,
+          portfolios: values.portfolios,
+        }),
+      );
+      
+      setSaved(true);
+      toast.success("Profile updated successfully.");
+      window.setTimeout(() => setSaved(false), 3000);
+      router.push('/my-profile');
+    },
+
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "The Profile could not be saved."
+      );
+    },
+  });
+
   const onSubmit = (values: FreelancerProfileFormValues) => {
     let hasCollectionError = false;
 
@@ -599,37 +734,12 @@ export function ProfileEditor({
       return;
     }
 
-    const profileValues = {
-      clerk_profile: {
-        firstName: values.firstName,
-        lastName: values.lastName,
-      },
-      freelancer_metadata: {
-        professional_title: values.professional_title,
-        professional_description: values.professional_description,
-        hourly_rate: values.hourly_rate,
-        country: values.country,
-        city: values.city,
-        availability_status: values.availability_status,
-        weekly_availability: values.weekly_availability,
-        experience_level: values.experience_level,
-        skills,
-        languages,
-      },
-      freelancer_portfolios: portfolio.map((project) => ({
-        title: project.title,
-        category: project.category,
-        description: project.description,
-        live_url: project.live_url,
-        cover_image: project.cover_image,
-      })),
-    };
-
-    console.log("Freelancer profile values:", profileValues);
-    reset(values);
-    setSavedDynamicValues(JSON.stringify({ skills, languages, portfolio }));
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 3000);
+    profileMutation.mutate({
+      ...values,
+      skills,
+      languages,
+      portfolios: portfolio,
+    });
   };
 
   const onInvalid = () => {
@@ -684,12 +794,16 @@ export function ProfileEditor({
 
   if (!isEditing) {
     return <ProfilePreview />;
-  }
+  };
+
+  if (!isLoaded || profileMetaDataLoading) {
+    return <ProfileSkeleton editing={isEditing} />;
+  };
 
   return (
     <div className="min-h-svh bg-[#f4f6f2] font-(family-name:--font-dm-sans) text-[#242724]">
       <DashboardHeader />
-      <main className="mx-auto max-w-360 px-5 py-8 sm:px-8 lg:py-10">
+      <main className="px-5 py-8 mx-auto max-w-360 sm:px-8 lg:py-10">
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
             <Link
@@ -709,7 +823,7 @@ export function ProfileEditor({
           </div>
           <Link
             href="/my-profile"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-black/10 bg-white px-4 text-sm font-semibold hover:bg-black/3"
+            className="inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold bg-white border h-11 rounded-xl border-black/10 hover:bg-black/3"
           >
             Preview public profile
             <Icon icon="solar:arrow-right-up-linear" width="18" />
@@ -718,11 +832,15 @@ export function ProfileEditor({
 
         <div className="mt-8 grid items-start gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="grid gap-5 xl:sticky xl:top-24">
-            <section className="rounded-2xl border border-black/8 bg-white p-5 text-center">
-              <div className="relative mx-auto h-24 w-24">
-                <span className="flex h-full w-full items-center justify-center rounded-full bg-[#496e67] text-2xl font-semibold text-white">
-                  SK
-                </span>
+            <section className="p-5 text-center bg-white border rounded-2xl border-black/8">
+              <div className="relative w-24 h-24 mx-auto">
+                <Image
+                  src={user?.imageUrl || ''}
+                  alt={user?.username || ''}
+                  width={90}
+                  height={90}
+                  className="object-cover rounded-full"
+                />
                 <button
                   type="button"
                   aria-label="Change profile photo"
@@ -731,11 +849,11 @@ export function ProfileEditor({
                   <Icon icon="solar:camera-linear" width="16" />
                 </button>
               </div>
-              <h2 className="mt-4 text-lg font-semibold">Shahriar Sajeeb</h2>
+              <h2 className="mt-4 text-lg font-semibold">{user?.username}</h2>
               <p className="mt-1 text-xs text-[#777c74]">
                 Full-stack product engineer
               </p>
-              <div className="mt-5 flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between mt-5 text-xs">
                 <span className="font-medium">Profile strength</span>
                 <strong className="text-[#52784f]">{strength}%</strong>
               </div>
@@ -747,7 +865,7 @@ export function ProfileEditor({
               </div>
             </section>
 
-            <nav className="rounded-2xl border border-black/8 bg-white p-2 text-sm">
+            <nav className="p-2 text-sm bg-white border rounded-2xl border-black/8">
               {[
                 ["profile-details", "solar:user-linear", "Profile details"],
                 ["professional", "solar:case-round-linear", "Professional"],
@@ -759,11 +877,10 @@ export function ProfileEditor({
                   href={`#${href}`}
                   aria-current={activeSection === href ? "location" : undefined}
                   onClick={() => setActiveSection(href)}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-3 font-medium transition ${
-                    activeSection === href
-                      ? "bg-[#edf4ea] text-[#4e774b]"
-                      : "text-[#686d65] hover:bg-[#f0f4ee] hover:text-[#4e774b]"
-                  }`}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-3 font-medium transition ${activeSection === href
+                    ? "bg-[#edf4ea] text-[#4e774b]"
+                    : "text-[#686d65] hover:bg-[#f0f4ee] hover:text-[#4e774b]"
+                    }`}
                 >
                   <Icon icon={icon} width="19" />
                   {label}
@@ -814,16 +931,28 @@ export function ProfileEditor({
                 <label className={labelClass}>
                   Country *
                   <select
-                    className={inputClass}
+                    className='w-full mt-2 border h-11 rounded-xl border-black/10 bg-white px-3 text-sm font-normal outline-none focus:border-[#6e916a]'
                     {...register("country", {
                       required: "Country is required.",
                     })}
+                    defaultValue={(() => {
+                      const savedCountry = user?.unsafeMetadata?.country;
+
+                      if (typeof savedCountry !== 'string') return '';
+
+                      return countries.find(
+                        (country) => country.code === savedCountry || country.name === savedCountry,
+                      )?.code ?? '';
+                    })()}
                   >
-                    <option>Thailand</option>
-                    <option>United States</option>
-                    <option>United Kingdom</option>
-                    <option>Canada</option>
-                    <option>Australia</option>
+                    <option value="" disabled>
+                      Select your country
+                    </option>
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
                   </select>
                   {errors.country && (
                     <span className="text-xs font-medium text-[#a44c4c]">
@@ -835,6 +964,7 @@ export function ProfileEditor({
                   City *
                   <input
                     className={inputClass}
+                    placeholder="New York"
                     {...register("city", { required: "City is required." })}
                   />
                   {errors.city && (
@@ -950,6 +1080,7 @@ export function ProfileEditor({
                   Professional title *
                   <input
                     className={inputClass}
+                    placeholder="Softwere Engineer"
                     {...register("professional_title", {
                       required: "Professional title is required.",
                     })}
@@ -963,6 +1094,7 @@ export function ProfileEditor({
                 <label className={labelClass}>
                   Professional Description *
                   <textarea
+                    placeholder="Write something about your profession."
                     rows={7}
                     {...register("professional_description", {
                       required: "Professional description is required.",
@@ -1109,7 +1241,7 @@ export function ProfileEditor({
                   </span>
                 ))}
               </div>
-              <div className="mt-5 flex max-w-lg gap-2">
+              <div className="flex max-w-lg gap-2 mt-5">
                 <input
                   value={skillInput}
                   onChange={(event) => setSkillInput(event.target.value)}
@@ -1128,7 +1260,7 @@ export function ProfileEditor({
                   type="button"
                   onClick={addSkill}
                   disabled={!skillInput.trim() || skills.length >= 15}
-                  className="cursor-pointer rounded-xl border border-black/10 px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+                  className="px-5 text-sm font-semibold border cursor-pointer rounded-xl border-black/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Add
                 </button>
@@ -1156,7 +1288,7 @@ export function ProfileEditor({
                 {portfolio.map((project) => (
                   <article
                     key={project.client_id}
-                    className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-black/9 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-black/14 hover:shadow-lg hover:shadow-black/6"
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-black/9 bg-white shadow transition duration-200 hover:-translate-y-0.5 hover:border-black/14 hover:shadow-lg hover:shadow-black/2"
                   >
                     <div
                       className="relative aspect-video overflow-hidden bg-[#e4ead8] bg-cover bg-center"
@@ -1186,7 +1318,7 @@ export function ProfileEditor({
                         <Icon icon="solar:trash-bin-trash-linear" width="17" />
                       </button>
                     </div>
-                    <div className="flex flex-1 flex-col p-5">
+                    <div className="flex flex-col flex-1 p-5">
                       <p className="text-[10px] font-semibold tracking-[0.12em] text-[#62805f] uppercase">
                         {project.category}
                       </p>
@@ -1196,7 +1328,7 @@ export function ProfileEditor({
                       <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#777c74]">
                         {project.description}
                       </p>
-                      <div className="mt-5 border-t border-black/7 pt-4">
+                      <div className="pt-4 mt-5 border-t border-black/7">
                         {project.live_url ? (
                           <a
                             href={project.live_url}
@@ -1243,7 +1375,7 @@ export function ProfileEditor({
               )}
             </SectionCard>
 
-            <div className="sticky bottom-4 z-20 flex items-center justify-between gap-4 rounded-2xl border border-black/9 bg-white/95 p-4 shadow-xl shadow-black/8 backdrop-blur">
+            <div className="sticky z-20 flex items-center justify-between gap-4 p-4 border shadow-xl bottom-4 rounded-2xl border-black/9 bg-white/95 shadow-black/8 backdrop-blur">
               <p className="hidden text-xs text-[#777c74] sm:block">
                 Review your changes before saving.
               </p>
@@ -1252,7 +1384,7 @@ export function ProfileEditor({
                 disabled={!canSave}
                 className="ml-auto cursor-pointer rounded-xl bg-[#252724] px-6 py-3 text-sm font-semibold text-white hover:bg-[#3b3e39] disabled:cursor-not-allowed disabled:opacity-45"
               >
-                Save profile
+                {profileMutation.isPending ? "Saving..." : "Save profile"}
               </button>
             </div>
           </form>
@@ -1268,7 +1400,7 @@ export function ProfileEditor({
         >
           <form
             onSubmit={addPortfolio}
-            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-8"
+            className="w-full max-w-lg p-6 bg-white shadow-2xl rounded-3xl sm:p-8"
           >
             <div className="flex items-start justify-between">
               <div>
@@ -1291,7 +1423,7 @@ export function ProfileEditor({
                 <Icon icon="solar:close-circle-linear" width="24" />
               </button>
             </div>
-            <div className="mt-6 grid gap-5">
+            <div className="grid gap-5 mt-6">
               <label className={labelClass}>
                 Project title *
                 <input
@@ -1352,7 +1484,7 @@ export function ProfileEditor({
                 />
               </label>
             </div>
-            <div className="mt-6 flex justify-end gap-3 border-t border-black/7 pt-5">
+            <div className="flex justify-end gap-3 pt-5 mt-6 border-t border-black/7">
               <button
                 type="button"
                 onClick={() => setShowPortfolioForm(false)}

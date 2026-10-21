@@ -65,7 +65,7 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
   const [isFormComplete, setIsFormComplete] = useState(false);
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
 
-  const { data: profileMetadata, isLoading: profileMetaDataLoading } = useQuery({
+  const { data: profileMetaData, isLoading: profileMetaDataLoading } = useQuery({
     queryKey: ['profile-metadata'],
     enabled: Boolean(user),
     queryFn: async () => {
@@ -88,7 +88,7 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
     }
   });
 
-  const savedIndustry = profileMetadata?.industry;
+  const savedIndustry = profileMetaData?.industry;
   const industry = selectedIndustry ?? (savedIndustry ? industryOptions.some((option) => option === savedIndustry) ? savedIndustry : "Other" : 'Software & technology');
 
   const saveClientProfileMutation = useMutation({
@@ -341,7 +341,7 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
             <div className="grid gap-4 mt-5 sm:grid-cols-2">
               <Field label="First name *" defaultValue={user.firstName || 'N/A'} name="firstName" placeholder="First name" />
               <Field label="Last name *" defaultValue={user.lastName || 'N/A'} name="lastName" placeholder="Last name" />
-              <Field label="Role *" defaultValue={profileMetadata?.professionalRole ?? ''} name='jobRole' placeholder='Managing Director' />
+              <Field label="Role *" defaultValue={profileMetaData?.professionalRole ?? ''} name='jobRole' placeholder='Managing Director' />
               <label className='text-xs font-semibold'>
                 Location *
                 <select
@@ -377,18 +377,18 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
               This information is attached to public job posts and proposals.
             </p>
             <div className="grid gap-4 mt-5 sm:grid-cols-2">
-              <Field label="Company name *" defaultValue={profileMetadata?.companyName || ''} name="companyName" placeholder='Acme Ltd.' />
+              <Field label="Company name *" defaultValue={profileMetaData?.companyName || ''} name="companyName" placeholder='Acme Ltd.' />
               <Field
                 label="Company website *"
                 name="companyWebsite"
                 type="url"
-                defaultValue={profileMetadata?.companyWebsite || ''}
+                defaultValue={profileMetaData?.companyWebsite || ''}
                 placeholder="https://www.acme.com"
               />
               <SelectField
                 label="Company size *"
                 name='companySize'
-                defaultValue={profileMetadata?.companySize || 'Just me'}
+                defaultValue={profileMetaData?.companySize || 'Just me'}
                 options={[
                   "Just me",
                   "2–10 employees",
@@ -418,7 +418,7 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
                 <Field
                   label="Custom industry *"
                   name='customIndustry'
-                  defaultValue={profileMetadata && !industryOptions.some((option) => option === profileMetadata.industry) ? profileMetadata.industry : ''}
+                  defaultValue={profileMetaData && !industryOptions.some((option) => option === profileMetaData.industry) ? profileMetaData.industry : ''}
                   placeholder="Enter your industry"
                 />
               )}
@@ -429,7 +429,7 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
                 name="companyDescription"
                 rows={5}
                 required
-                defaultValue={profileMetadata?.companyDescription || ''}
+                defaultValue={profileMetaData?.companyDescription || ''}
                 placeholder="Describe your company"
                 className="mt-2 w-full resize-none rounded-xl border border-black/10 p-3 text-sm font-normal outline-none focus:border-[#6e916a]"
               />
@@ -456,16 +456,16 @@ export function ClientProfile({ editing = false }: { editing?: boolean }) {
           </div>
         </form>
       ) : (
-        <ProfilePreview profileMetadata={profileMetadata} user={user} />
+        <ProfilePreview profileMetaData={profileMetaData} user={user} />
       )}
     </>
   );
 }
 
 function ProfilePreview({
-  profileMetadata, user
+  profileMetaData, user
 }: {
-  profileMetadata: ClientProfilePayload | null | undefined;
+  profileMetaData: ClientProfilePayload | null | undefined;
   user: UserResource
 }) {
   const contractsPerPage = 2;
@@ -496,7 +496,7 @@ function ProfilePreview({
           />
           <h2 className="mt-5 inline-flex items-center justify-center gap-1.5 text-xl font-semibold">
             {user?.firstName}
-            {profileMetadata?.identityVerified && (
+            {profileMetaData?.identityVerified && (
               <Icon
                 icon="solar:verified-check-bold"
                 width="19"
@@ -505,7 +505,7 @@ function ProfilePreview({
             )}
           </h2>
           <p className="mt-1 text-sm text-[#747a72]">
-            {profileMetadata?.professionalRole} · {profileMetadata?.companyName}
+            {profileMetaData?.professionalRole} · {profileMetaData?.companyName}
           </p>
           <div className="mt-3 flex justify-center text-xs text-[#858a82]">
             <span className="inline-flex max-w-56 items-start gap-1.5 text-center">
@@ -520,7 +520,7 @@ function ProfilePreview({
             </span>
           </div>
           <div className="pt-5 mt-5 border-t border-black/7">
-            {profileMetadata?.paymentMethodVerified ? (
+            {profileMetaData?.paymentMethodVerified ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-[#e8f3e5] px-3 py-2 text-xs font-semibold text-[#4d784a]">
                 <Icon icon="solar:verified-check-bold" width="17" />
                 Payment method verified
@@ -556,17 +556,17 @@ function ProfilePreview({
         <section className="p-5 bg-white border rounded-2xl border-black/8">
           <h2 className="text-sm font-semibold">Company details</h2>
           <dl className="grid gap-4 mt-4">
-            <SidebarDetail label="Industry" value={profileMetadata?.industry || 'N/A'} />
-            <SidebarDetail label="Company size" value={profileMetadata?.companyName || 'Just me'} />
-            <SidebarDetail label="Member since" value={profileMetadata?.joinedAt?.toString().slice(0, 4) || '2026'} />
+            <SidebarDetail label="Industry" value={profileMetaData?.industry || 'N/A'} />
+            <SidebarDetail label="Company size" value={profileMetaData?.companyName || 'Just me'} />
+            <SidebarDetail label="Member since" value={profileMetaData?.joinedAt?.toString().slice(0, 4) || '2026'} />
           </dl>
           <a
-            href={profileMetadata?.companyWebsite}
+            href={profileMetaData?.companyWebsite}
             target="_blank"
             rel="noreferrer"
             className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#52784f] hover:underline"
           >
-            {profileMetadata?.companyWebsite}
+            {profileMetaData?.companyWebsite}
             <Icon icon="solar:arrow-right-up-linear" width="14" />
           </a>
         </section>
@@ -577,14 +577,14 @@ function ProfilePreview({
           <p className="text-xs font-semibold tracking-[.13em] text-[#62805f] uppercase">
             About the company
           </p>
-          <h2 className="mt-3 text-2xl font-semibold">{profileMetadata?.companyName}</h2>
+          <h2 className="mt-3 text-2xl font-semibold">{profileMetaData?.companyName}</h2>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-[#676e66]">
-            {profileMetadata?.companyDescription}
+            {profileMetaData?.companyDescription}
           </p>
           <div className="grid gap-3 mt-6 sm:grid-cols-3">
-            <Info label="Industry" value={profileMetadata?.industry || 'N/A'} />
-            <Info label="Company size" value={profileMetadata?.companySize || 'Just me'} />
-            <Info label="Member since" value={profileMetadata?.joinedAt?.toString().slice(0, 4) || '2026'} />
+            <Info label="Industry" value={profileMetaData?.industry || 'N/A'} />
+            <Info label="Company size" value={profileMetaData?.companySize || 'Just me'} />
+            <Info label="Member since" value={profileMetaData?.joinedAt?.toString().slice(0, 4) || '2026'} />
           </div>
         </section>
         <section className="grid gap-4 sm:grid-cols-3">
