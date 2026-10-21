@@ -96,10 +96,11 @@ const uploadPortfolioImages = async (userId: string, portfolios: PortfolioData[]
 };
 
 export const saveFreelancerProfile = async (input: SaveFreelancerProfileInput): Promise<FreeLancerProfileData> => {
-    const existingImages = await database.select({
+    const existingImages = await database
+    .select({
         cover_image: freelancer_portfolios.cover_image
     })
-        .from(freelancer_portfolios)
+    .from(freelancer_portfolios)
     .innerJoin(
         freelancer_metadata,
         eq(freelancer_portfolios.freelancer_id, freelancer_metadata.id)
@@ -199,9 +200,9 @@ export const saveFreelancerProfile = async (input: SaveFreelancerProfileInput): 
         ACCOUNT_AUTH_CACHE_TTL_SECONDS,
         JSON.stringify({
             userId: input.userId,
-            role: 'FREELANCER',
-            isOnBoardingComplete: true,
+            role: 'freelancer',
             accountExists: true,
+            isOnboarded: true,
         }),
     );
 
