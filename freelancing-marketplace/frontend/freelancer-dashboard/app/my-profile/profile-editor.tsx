@@ -14,16 +14,6 @@ import { ProfileSkeleton } from "./profile-skelton";
 import { useRouter } from "next/navigation";
 import { UserResource } from "@clerk/nextjs/types";
 
-type PreviewPortfolio = {
-  id: number;
-  title: string;
-  category: string;
-  description: string;
-  liveLink?: string;
-  color: string;
-  icon: string;
-};
-
 type FreelancerPortfolioValue = {
   client_id: string;
   title: string;
@@ -34,6 +24,22 @@ type FreelancerPortfolioValue = {
     imageId: string;
     url: string;
   };
+};
+
+type FreelancerProfileMetadata = {
+  professional_title: string;
+  professional_description: string;
+  hourly_rate: number;
+  country: string;
+  city: string;
+  availability_status: string;
+  weekly_availability: string;
+  experience_level: string;
+  skills: string[];
+  languages: Language[];
+  portfolios: Array<Omit<FreelancerPortfolioValue, "client_id"> & { id: string }>;
+  identityVerified: boolean;
+  joined_At: string | null;
 };
 
 type Language = {
@@ -84,40 +90,6 @@ const initialLanguages: Language[] = [
   { language: "English", proficiency: "Fluent" },
 ];
 
-const initialSkills = [
-  "Next.js",
-  "TypeScript",
-  "React",
-  "Node.js",
-  "PostgreSQL",
-  "Tailwind CSS",
-  "AWS",
-  "UI Engineering",
-];
-
-const initialPortfolio: PreviewPortfolio[] = [
-  {
-    id: 1,
-    title: "B2B analytics workspace",
-    category: "SaaS product",
-    description:
-      "Designed and built a collaborative analytics platform used by 4,000+ product teams.",
-    liveLink: "https://example.com/analytics-workspace",
-    color: "from-[#dcebe2] to-[#abcbb8]",
-    icon: "solar:chart-square-linear",
-  },
-  {
-    id: 2,
-    title: "AI research assistant",
-    category: "AI application",
-    description:
-      "Production research workflow with source citations, evaluation, and team collaboration.",
-    liveLink: "https://example.com/research-assistant",
-    color: "from-[#e6e2f1] to-[#beb5d8]",
-    icon: "solar:magic-stick-3-linear",
-  },
-];
-
 const inputClass =
   "h-12 w-full rounded-xl border border-black/10 bg-white px-3.5 text-sm outline-none transition placeholder:text-[#a1a59e] focus:border-[#71936e] focus:ring-3 focus:ring-[#71936e]/10";
 const labelClass = "grid gap-2 text-sm font-semibold text-[#343833]";
@@ -155,7 +127,13 @@ function SectionCard({
   );
 }
 
-function ProfilePreview({ user, profileMetaData }: { user: UserResource | undefined | null; profileMetaData: any }) {
+function ProfilePreview({
+  user,
+  profileMetaData,
+}: {
+  user: UserResource | undefined | null;
+  profileMetaData: FreelancerProfileMetadata | null | undefined;
+}) {
   const completedJobs = [
     {
       title: "Build a collaborative analytics dashboard",
@@ -273,7 +251,7 @@ function ProfilePreview({ user, profileMetaData }: { user: UserResource | undefi
                 <p className="mt-4 text-xs font-semibold tracking-wide text-[#7b8078] uppercase">
                   Languages
                 </p>
-                {profileMetaData.languages.map((language: any) => (
+                {profileMetaData?.languages.map((language) => (
                   <p
                     key={`${language.language}-${language.proficiency}`}
                     className="mt-2 text-sm text-[#656b63]"
@@ -326,7 +304,7 @@ function ProfilePreview({ user, profileMetaData }: { user: UserResource | undefi
                 <div className="text-left shrink-0 sm:text-right">
                   <p className="text-xs text-[#7c8179]">Hourly rate</p>
                   <p className="mt-1 text-xl font-semibold">
-                    ${parseInt(profileMetaData?.hourly_rate)}
+                    ${profileMetaData?.hourly_rate ?? 0}
                     <span className="text-sm font-medium text-[#7c8179]">
                       /hr
                     </span>
@@ -363,7 +341,7 @@ function ProfilePreview({ user, profileMetaData }: { user: UserResource | undefi
                 </span>
               </div>
               <div className="grid gap-4 mt-6 md:grid-cols-2">
-                {profileMetaData?.portfolios?.map((project: any) => (
+                {profileMetaData?.portfolios?.map((project) => (
                   <article
                     key={project.id}
                     className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-black/9 bg-white shadow transition duration-200 hover:-translate-y-0.5 hover:border-black/14 hover:shadow-lg hover:shadow-black/2"
@@ -518,10 +496,11 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
 
   const hasInitialisedProfile = useRef(false);
 
-  const { data: profileMetaData, isLoading: profileMetaDataLoading } = useQuery({
+  const { data: profileMetaData, isLoading: profileMetaDataLoading } =
+    useQuery<FreelancerProfileMetadata | null>({
     queryKey: ['profile-metadata'],
     enabled: Boolean(user),
-    queryFn: async () => {
+    queryFn: async (): Promise<FreelancerProfileMetadata | null> => {
       const token = await getToken();
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/freelancer/profile?role=freelancer`, {
@@ -545,11 +524,12 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
     if (!isLoaded || profileMetaDataLoading || !user || hasInitialisedProfile.current) return;
 
     const nextSkills = profileMetaData?.skills ?? [];
-    const nextLanguages = profileMetaData?.languages?.length > 0 ? profileMetaData.languages : initialLanguages;
+    const profileLanguages = profileMetaData?.languages ?? [];
+    const nextLanguages = profileLanguages.length > 0 ? profileLanguages : initialLanguages;
     const nextPortfolio = (profileMetaData?.portfolios ?? []).map(
-      (project: FreelancerPortfolioValue) => ({
+      (project) => ({
         ...project,
-        client_id: project.client_id || crypto.randomUUID(),
+        client_id: project.id || crypto.randomUUID(),
       }),
     );
 
@@ -675,7 +655,7 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
           freelancer_portfolios: portfolios.map(({ client_id: _clientId, ...portfolio }) => portfolio),
         }),
       });
-
+      
       const result = await response.json();
 
       if (!response.ok) {
