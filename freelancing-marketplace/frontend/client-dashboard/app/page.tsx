@@ -1,21 +1,26 @@
+'use client';
+
 import { Icon } from "@iconify/react";
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ClientShell } from "./_components/dashboard/client-shell";
 import { clientContracts, clientJobs, clientProposals } from "./_components/data/client-data";
-
-export const metadata: Metadata = {
-  title: "Overview",
-  description: "Review your active job posts, proposals, and client contracts.",
-};
+import { useUser } from "@clerk/nextjs";
 
 export default function ClientDashboardPage() {
+
+  const { user, isLoaded } = useUser();
+  
   const openJobs = clientJobs.filter((job) => job.status === "Open");
   const activeContracts = clientContracts.filter((contract) => contract.status !== "Completed");
+  
   return (
     <ClientShell>
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p className="text-xs font-semibold tracking-[.14em] text-[#62805f] uppercase">Client workspace</p><h1 className="mt-2 text-3xl font-semibold tracking-[-.045em] sm:text-4xl">Good morning, Olivia.</h1><p className="mt-2 text-sm text-[#72776f]">Keep hiring and delivery moving without the busywork.</p></div>
+        <div>
+          <p className="text-xs font-semibold tracking-[.14em] text-[#62805f] uppercase">Client workspace</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-.045em] sm:text-4xl">Good morning, {!isLoaded ? '...' : user?.fullName || 'there'}!</h1>
+          <p className="mt-2 text-sm text-[#72776f]">Keep hiring and delivery moving without the busywork.</p>
+        </div>
         <Link href="/jobs/new" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white"><Icon icon="solar:add-circle-linear" width="18" /> Post a job</Link>
       </div>
       <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
