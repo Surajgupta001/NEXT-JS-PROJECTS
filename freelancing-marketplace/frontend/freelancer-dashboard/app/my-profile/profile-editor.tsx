@@ -14,16 +14,6 @@ import { ProfileSkeleton } from "./profile-skelton";
 import { useRouter } from "next/navigation";
 import { UserResource } from "@clerk/nextjs/types";
 
-type PreviewPortfolio = {
-  id: number;
-  title: string;
-  category: string;
-  description: string;
-  liveLink?: string;
-  color: string;
-  icon: string;
-};
-
 type FreelancerPortfolioValue = {
   client_id: string;
   title: string;
@@ -98,40 +88,6 @@ const languageOptions = [
 
 const initialLanguages: Language[] = [
   { language: "English", proficiency: "Fluent" },
-];
-
-const initialSkills = [
-  "Next.js",
-  "TypeScript",
-  "React",
-  "Node.js",
-  "PostgreSQL",
-  "Tailwind CSS",
-  "AWS",
-  "UI Engineering",
-];
-
-const initialPortfolio: PreviewPortfolio[] = [
-  {
-    id: 1,
-    title: "B2B analytics workspace",
-    category: "SaaS product",
-    description:
-      "Designed and built a collaborative analytics platform used by 4,000+ product teams.",
-    liveLink: "https://example.com/analytics-workspace",
-    color: "from-[#dcebe2] to-[#abcbb8]",
-    icon: "solar:chart-square-linear",
-  },
-  {
-    id: 2,
-    title: "AI research assistant",
-    category: "AI application",
-    description:
-      "Production research workflow with source citations, evaluation, and team collaboration.",
-    liveLink: "https://example.com/research-assistant",
-    color: "from-[#e6e2f1] to-[#beb5d8]",
-    icon: "solar:magic-stick-3-linear",
-  },
 ];
 
 const inputClass =
@@ -699,7 +655,7 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
           freelancer_portfolios: portfolios.map(({ client_id: _clientId, ...portfolio }) => portfolio),
         }),
       });
-
+      
       const result = await response.json();
 
       if (!response.ok) {
