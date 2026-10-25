@@ -31,7 +31,7 @@ export const getFreelancerProfile = async (userId: string): Promise<FreeLancerPr
     const portfolios = await database
         .select()
         .from(freelancer_portfolios)
-        .where(eq(freelancer_portfolios.freelancer_id, result.accounts.id));
+        .where(eq(freelancer_portfolios.freelancer_id, result.freelancer_metadata.id));
 
     return {
         professional_title: profile.professional_title,

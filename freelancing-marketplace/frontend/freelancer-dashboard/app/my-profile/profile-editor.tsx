@@ -7,11 +7,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import { SubmitEvent, useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { DashboardHeader } from "../_components/dashboard/dashboard-header";
 import { ProfileSkeleton } from "./profile-skelton";
 import { useRouter } from "next/navigation";
+import { UserResource } from "@clerk/nextjs/types";
 
 type PreviewPortfolio = {
   id: number;
@@ -154,7 +155,7 @@ function SectionCard({
   );
 }
 
-function ProfilePreview() {
+function ProfilePreview({ user, profileMetaData }: { user: UserResource | undefined | null; profileMetaData: any }) {
   const completedJobs = [
     {
       title: "Build a collaborative analytics dashboard",
@@ -217,26 +218,27 @@ function ProfilePreview() {
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[290px_minmax(0,1fr)]">
           <aside className="grid gap-5 lg:sticky lg:top-24">
             <section className="p-6 text-center bg-white border rounded-3xl border-black/8">
-              <div className="relative mx-auto h-28 w-28">
-                <span className="flex h-full w-full items-center justify-center rounded-full bg-[#496e67] text-3xl font-semibold text-white">
-                  SK
-                </span>
-                <span
-                  className="absolute right-1 bottom-1 h-5 w-5 rounded-full border-4 border-white bg-[#59a05d]"
-                  title="Available now"
+              <div className="relative mx-auto w-28">
+                <Image
+                  src={user?.imageUrl || ''}
+                  alt={user?.username || ''}
+                  width={90}
+                  height={90}
+                  className="object-cover rounded-full w-28 h-28"
                 />
               </div>
-              <h1 className="mt-5 text-2xl font-semibold tracking-[-0.035em]">
-                Shahriar Sajeeb
+              <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">
+                {user?.fullName}
               </h1>
               <p className="mt-2 text-sm leading-6 text-[#656b63]">
-                Full-stack product engineer
-                <br />
-                Next.js & TypeScript
+                {profileMetaData?.professional_title}
               </p>
               <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#777c74]">
                 <Icon icon="solar:map-point-linear" width="16" />
-                Chiang Mai, Thailand
+                {profileMetaData?.city}, {" "}
+                {countries.find(
+                  (country) => country.code === user?.unsafeMetadata.country,
+                )?.name ?? ""}
               </p>
 
               <div className="grid grid-cols-3 py-4 mt-6 border-y border-black/7">
@@ -266,20 +268,26 @@ function ProfilePreview() {
                 </p>
                 <p className="flex items-center gap-2 mt-2 text-sm font-medium">
                   <span className="h-2 w-2 rounded-full bg-[#59a05d]" />
-                  20–30 hours per week
+                  {profileMetaData?.weekly_availability}
                 </p>
                 <p className="mt-4 text-xs font-semibold tracking-wide text-[#7b8078] uppercase">
                   Languages
                 </p>
-                <p className="mt-2 text-sm text-[#656b63]">English — Fluent</p>
-                <p className="mt-1 text-sm text-[#656b63]">Bengali — Native</p>
+                {profileMetaData.languages.map((language: any) => (
+                  <p
+                    key={`${language.language}-${language.proficiency}`}
+                    className="mt-2 text-sm text-[#656b63]"
+                  >
+                    {language.language} - {language.proficiency}
+                  </p>
+                ))}
               </div>
             </section>
 
             <section className="rounded-2xl border border-[#d2dfcf] bg-[#edf4ea] p-5">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#476f44]">
                 <Icon icon="solar:shield-check-bold" width="20" />
-                Identity verified
+                Account Verification Status
               </div>
               <div className="mt-4 grid gap-3 text-xs text-[#657063]">
                 <p className="flex items-center gap-2">
@@ -290,14 +298,16 @@ function ProfilePreview() {
                   />
                   Email verified
                 </p>
-                <p className="flex items-center gap-2">
-                  <Icon
-                    icon="solar:check-circle-bold"
-                    width="15"
-                    className="text-[#5d895a]"
-                  />
-                  Payment method verified
-                </p>
+                {profileMetaData?.identityVerified && (
+                  <p className="flex items-center gap-2">
+                    <Icon
+                      icon="solar:check-circle-bold"
+                      width="15"
+                      className="text-[#5d895a]"
+                    />
+                    Personal Identity verified
+                  </p>
+                )}
               </div>
             </section>
           </aside>
@@ -307,16 +317,16 @@ function ProfilePreview() {
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.14em] text-[#5c8159] uppercase">
-                    Available for selected projects
+                    {profileMetaData?.availability_status} for selected projects
                   </p>
                   <h2 className="mt-3 max-w-2xl text-3xl leading-tight font-semibold tracking-[-0.04em]">
-                    I build dependable digital products from idea to production.
+                    {profileMetaData?.professional_title}
                   </h2>
                 </div>
                 <div className="text-left shrink-0 sm:text-right">
                   <p className="text-xs text-[#7c8179]">Hourly rate</p>
                   <p className="mt-1 text-xl font-semibold">
-                    $85
+                    ${parseInt(profileMetaData?.hourly_rate)}
                     <span className="text-sm font-medium text-[#7c8179]">
                       /hr
                     </span>
@@ -324,20 +334,10 @@ function ProfilePreview() {
                 </div>
               </div>
               <div className="mt-6 space-y-4 text-sm leading-7 text-[#626860]">
-                <p>
-                  I help product teams turn complex ideas into fast, dependable
-                  web applications. My work spans product architecture, polished
-                  React interfaces, scalable APIs, and production
-                  infrastructure.
-                </p>
-                <p>
-                  I communicate clearly, ship in thoughtful milestones, and care
-                  deeply about the details users feel—from accessibility and
-                  performance to the quality of the final handoff.
-                </p>
+                <p>{profileMetaData?.professional_description}</p>
               </div>
               <div className="flex flex-wrap gap-2 mt-6">
-                {initialSkills.map((skill) => (
+                {profileMetaData?.skills.map((skill: string) => (
                   <span
                     key={skill}
                     className="rounded-xl bg-[#edf2eb] px-3 py-2 text-xs font-medium text-[#4f584d]"
@@ -359,45 +359,53 @@ function ProfilePreview() {
                   </h2>
                 </div>
                 <span className="text-xs text-[#838880]">
-                  {initialPortfolio.length} projects
+                  {profileMetaData?.portfolios?.length} projects
                 </span>
               </div>
               <div className="grid gap-4 mt-6 md:grid-cols-2">
-                {initialPortfolio.map((project) => (
+                {profileMetaData?.portfolios?.map((project: any) => (
                   <article
                     key={project.id}
-                    className="overflow-hidden border rounded-2xl border-black/8"
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-black/9 bg-white shadow transition duration-200 hover:-translate-y-0.5 hover:border-black/14 hover:shadow-lg hover:shadow-black/2"
                   >
                     <div
-                      className={`flex h-44 items-center justify-center bg-linear-to-br ${project.color}`}
+                      className="relative aspect-video overflow-hidden bg-[#e4ead8] bg-cover bg-center"
+                      style={{
+                        backgroundImage: `url(${project.cover_image.url})`,
+                      }}
                     >
-                      <Icon
-                        icon={project.icon}
-                        width="48"
-                        className="text-[#425a48]"
-                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/28 via-transparent to-transparent opacity-70" />
                     </div>
-                    <div className="p-5">
-                      <p className="text-[11px] font-semibold tracking-wide text-[#62805f] uppercase">
+                    <div className="flex flex-col flex-1 p-5">
+                      <p className="text-[10px] font-semibold tracking-[0.12em] text-[#62805f] uppercase">
                         {project.category}
                       </p>
-                      <h3 className="mt-2 text-lg font-semibold">
+                      <h3 className="mt-2 line-clamp-2 text-base font-semibold tracking-[-0.015em] text-[#292d28]">
                         {project.title}
                       </h3>
-                      <p className="mt-2 text-sm leading-6 text-[#747a72]">
+                      <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#777c74]">
                         {project.description}
                       </p>
-                      {project.liveLink && (
-                        <a
-                          href={project.liveLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#52784f] hover:underline"
-                        >
-                          View live project
-                          <Icon icon="solar:arrow-right-up-linear" width="15" />
-                        </a>
-                      )}
+                      <div className="pt-4 mt-5 border-t border-black/7">
+                        {project.live_url ? (
+                          <a
+                            href={project.live_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#52784f] transition hover:text-[#365f34]"
+                          >
+                            View live project
+                            <Icon
+                              icon="solar:arrow-right-up-linear"
+                              width="15"
+                            />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-[#969b94]">
+                            Portfolio case study
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </article>
                 ))}
@@ -469,17 +477,19 @@ function ProfilePreview() {
 }
 
 export function ProfileEditor({ initialEditing = false }: { initialEditing?: boolean }) {
-  
+
   const { user, isLoaded } = useUser();
   const isEditing = initialEditing;
-  
+
   const {
     register,
     handleSubmit,
     clearErrors,
     reset,
     setError,
-    formState: { errors, isDirty, isValid },
+    trigger,
+    control,
+    formState: { errors, isValid },
   } = useForm<FreelancerProfileFormValues>({
     mode: "onChange",
     defaultValues: {
@@ -503,9 +513,6 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
   const [languages, setLanguages] = useState<Language[]>(initialLanguages);
   const [showPortfolioForm, setShowPortfolioForm] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [savedDynamicValues, setSavedDynamicValues] = useState(() =>
-    JSON.stringify({ skills: [], languages: initialLanguages, portfolio: [] }),
-  );
 
   const router = useRouter();
 
@@ -565,15 +572,9 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
     setSkills(nextSkills);
     setLanguages(nextLanguages);
     setPortfolio(nextPortfolio);
-    setSavedDynamicValues(
-      JSON.stringify({
-        skills: nextSkills,
-        languages: nextLanguages,
-        portfolios: nextPortfolio,
-      }),
-    );
+    void trigger();
     hasInitialisedProfile.current = true;
-  }, [isLoaded, profileMetaDataLoading, user, profileMetaData, reset]);
+  }, [isLoaded, profileMetaDataLoading, user, profileMetaData, reset, trigger]);
 
   const updateLanguage = (index: number, update: Partial<Language>) => {
     setLanguages((current) =>
@@ -686,14 +687,7 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
 
     onSuccess: (_profile, values) => {
       reset(values);
-      setSavedDynamicValues(
-        JSON.stringify({
-          skills: values.skills,
-          languages: values.languages,
-          portfolios: values.portfolios,
-        }),
-      );
-      
+
       setSaved(true);
       toast.success("Profile updated successfully.");
       window.setTimeout(() => setSaved(false), 3000);
@@ -706,6 +700,25 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
       );
     },
   });
+
+  const updateAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("The selected image is too large. Please select an image under 5MB.");
+      return;
+    }
+
+    try {
+      await user?.setProfileImage({ file });
+      toast.success("Profile image updated successfully.");
+    } catch {
+      toast.error("Failed to update profile image.",);
+    }
+
+    event.target.value = "";
+  };
 
   const onSubmit = (values: FreelancerProfileFormValues) => {
     let hasCollectionError = false;
@@ -746,18 +759,50 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
     toast.error("Please fix the highlighted fields before saving.");
   };
 
-  const hasDynamicChanges =
-    JSON.stringify({ skills, languages, portfolio }) !== savedDynamicValues;
-
   const canSave =
-    (isDirty || hasDynamicChanges) &&
     isValid &&
     skills.length >= 3 &&
     portfolio.length >= 1 &&
     languages.length > 0 &&
     languages.every((item) => item.language);
 
-  const strength = Math.min(100, 75 + skills.length + portfolio.length * 3);
+  const formValues = useWatch({ control });
+
+  const personalFields = [
+    formValues.firstName,
+    formValues.lastName,
+    formValues.country,
+    formValues.city,
+  ];
+
+  const professionalFields = [
+    formValues.professional_title,
+    formValues.professional_description,
+    formValues.hourly_rate,
+    formValues.availability_status,
+    formValues.weekly_availability,
+    formValues.experience_level
+  ]
+
+  const completedLanguages = languages.filter((item) => item.language).length;
+
+  const strength = (
+    Math.min(user?.hasImage ? 10 : 0) +
+    personalFields.filter(Boolean).length * 3.75 +
+    professionalFields.filter(Boolean).length * 5 +
+    Math.min(skills.length / 10, 1) * 15 +
+    Math.min(completedLanguages / 3, 1) * 10 +
+    Math.min(portfolio.length / 3, 1) * 20
+  ).toFixed(2);
+
+  const strengthSuggestions = [
+    !user?.hasImage && "Add a profile photo",
+    personalFields.some((field) => !field) && "Complete your personal details",
+    professionalFields.some((field) => !field) && "Complete your professional details",
+    skills.length < 10 && `Add ${10 - skills.length} more skills`,
+    completedLanguages < 3 && `Add ${3 - completedLanguages} more languages`,
+    portfolio.length < 3 && `Add ${3 - portfolio.length} more portfolio projects`,
+  ].filter(Boolean) as string[];
 
   useEffect(() => {
     if (!isEditing) return;
@@ -792,12 +837,12 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
     return () => observer.disconnect();
   }, [isEditing]);
 
-  if (!isEditing) {
-    return <ProfilePreview />;
-  };
-
   if (!isLoaded || profileMetaDataLoading) {
     return <ProfileSkeleton editing={isEditing} />;
+  };
+
+  if (!isEditing) {
+    return <ProfilePreview user={user} profileMetaData={profileMetaData} />;
   };
 
   return (
@@ -839,29 +884,56 @@ export function ProfileEditor({ initialEditing = false }: { initialEditing?: boo
                   alt={user?.username || ''}
                   width={90}
                   height={90}
-                  className="object-cover rounded-full"
+                  className="object-cover rounded-full w-24 h-24"
                 />
-                <button
-                  type="button"
+                <label
                   aria-label="Change profile photo"
                   className="absolute right-0 bottom-0 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-[#252724] text-white"
                 >
                   <Icon icon="solar:camera-linear" width="16" />
-                </button>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    className="sr-only"
+                    onChange={updateAvatar}
+                  />
+                </label>
               </div>
               <h2 className="mt-4 text-lg font-semibold">{user?.username}</h2>
               <p className="mt-1 text-xs text-[#777c74]">
-                Full-stack product engineer
+                {profileMetaData?.professional_title}
               </p>
-              <div className="flex items-center justify-between mt-5 text-xs">
+              <div className="mt-2 flex items-center justify-between text-sm">
                 <span className="font-medium">Profile strength</span>
-                <strong className="text-[#52784f]">{strength}%</strong>
+                <span className="flex items-center gap-1.5">
+                  <strong className="text-[#52784f]">
+                    {strength}%
+                  </strong>
+                  {parseInt(strength) < 100 && (
+                    <span className="group relative">
+                      <button
+                        type="button"
+                        aria-label="how to complete your profile"
+                        className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-[#789075] text-[10px] font-bold text-[#52784f]"
+                      >
+                        ?
+                      </button>
+                      <span className="pointer-events-none absolute right-0 bottom-6 z-20 hidden w-56 rounded-xl bg-[#252724] p-3 text-left text-xs leading-5 font-normal text-white shadow-xl group-hover:block group-focus-within:block">
+                        <strong className="mb-1 block font-semibold">
+                          Reach 100%
+                        </strong>
+                        {strengthSuggestions.map((suggestion) => (
+                          <span key={suggestion} className="block text-white/75">
+                            • {suggestion}
+                          </span>
+                        ))}
+                      </span>
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e6e9e3]">
-                <div
-                  className="h-full rounded-full bg-[#648b61] transition-all"
-                  style={{ width: `${strength}%` }}
-                />
+                <div className="h-full rounded-full bg-[#648b61] transition-all" style={{ width: `${strength}%` }} />
               </div>
             </section>
 

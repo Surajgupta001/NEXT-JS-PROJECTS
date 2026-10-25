@@ -95,7 +95,7 @@ export const upsertFreelancerProfile: RequestHandler = asynchandler(async (reque
                 title: requiredText(portfolio.title, 'portfolio title'),
                 category: requiredText(portfolio.category, 'portfolio category'),
                 description: requiredText(portfolio.description, 'portfolio description'),
-                live_url: portfolio.live_url === 'string' && portfolio.live_url.trim() ? portfolio.live_url.trim() : null,
+                live_url: typeof portfolio.live_url === 'string' && portfolio.live_url.trim() ? portfolio.live_url.trim() : null,
                 cover_image: {
                     imageId: imageId,
                     url: imageUrl
