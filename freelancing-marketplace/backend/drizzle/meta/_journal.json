@@ -36,6 +36,41 @@
       "when": 1792175950595,
       "tag": "0004_bizarre_wolfsbane",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792940406556,
+      "tag": "0005_nifty_wiccan",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792951953876,
+      "tag": "0006_clammy_whiplash",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792996893368,
+      "tag": "0007_stormy_nitro",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792996996921,
+      "tag": "0008_curious_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792997569081,
+      "tag": "0009_pretty_night_nurse",
+      "breakpoints": true
     }
   ]
 }

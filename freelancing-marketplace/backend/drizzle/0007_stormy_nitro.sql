@@ -1,0 +1,1 @@
+ALTER TABLE "job_posts" ALTER COLUMN "client_id" SET DATA TYPE text;
