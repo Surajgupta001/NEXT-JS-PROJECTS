@@ -2,16 +2,14 @@
 
 import { Icon } from "@iconify/react";
 import { addDays, isAfter, parseISO, startOfDay } from "date-fns";
-import {
-  Controller,
-  useFieldArray,
-  useForm,
-  useWatch,
-  type FieldError,
-} from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch, type FieldError } from "react-hook-form";
 import { useState } from "react";
 import type { ClientJob } from "../data/client-data";
 import { DatePickerField } from "./date-picker-field";
+import { useMutation } from "@tanstack/react-query";
+import { getToken } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type JobPostValues = {
   title: string;
@@ -28,15 +26,42 @@ type JobPostValues = {
   attachments?: FileList;
 };
 
+type JobAttachment = {
+  fileId: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+};
+
+const fileToAttachment = (file: File): Promise<JobAttachment> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      resolve({
+        fileId: "",
+        fileName: file.name,
+        fileUrl: String(reader.result),
+        fileType: file.type,
+        fileSize: file.size,
+      });
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
 export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
   const editing = Boolean(initialJob);
-  const [published, setPublished] = useState(false);
+  const router = useRouter();
+  const [savedStatus, setSavedStatus] = useState<
+    "DRAFT" | "PUBLISHED" | null
+  >(null);
   const {
     control,
     register,
     handleSubmit,
     getValues,
     trigger,
+    reset,
     formState: { errors, isValid, isSubmitting },
   } = useForm<JobPostValues>({
     mode: "onChange",
@@ -73,6 +98,7 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
   const skills = useWatch({ control, name: "skills" }) ?? "";
   const milestones = useWatch({ control, name: "milestones" }) ?? [];
   const questions = useWatch({ control, name: "questions" }) ?? [];
+  const attachments = useWatch({ control, name: "attachments" }) ?? [];
   const totalBudget = milestones.reduce(
     (total, milestone) =>
       total +
@@ -91,23 +117,103 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
     (question) => !question.value?.trim(),
   );
 
-  const publishJob = async () => {
-    setPublished(true);
+  const saveJob = useMutation({
+    mutationFn: async ({
+      values, status
+    }: {
+      values: JobPostValues;
+      status: "DRAFT" | "PUBLISHED"
+    }) => {
+      const token = await getToken();
+
+      if (!token) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+
+      const jobsUrl = `${process.env.NEXT_PUBLIC_SERVER_URI}/jobs${editing ? `/${initialJob?.id}` : ""}?role=client`;
+      const response = await fetch(jobsUrl, {
+        method: editing ? "PUT" : "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: values.title,
+          description: values.description,
+          expertise_level: values.expertise,
+          expected_duration: values.duration,
+          skills: values.skills.split(",").map((skill) => skill.trim()).filter(Boolean),
+          milestones: values.milestones.map((milestone) => ({
+            title: milestone.title,
+            description: milestone.title,
+            budget: milestone.amount,
+            dueDate: milestone.due,
+          })),
+          screening_questions: values.questions.map((question) => question.value).filter(Boolean),
+          attachments: await Promise.all(
+            Array.from(values.attachments ?? []).map(fileToAttachment)
+          ),
+          status,
+        }),
+      });
+
+      let result: { message?: string; error?: string; data?: unknown } | null = null;
+
+      try {
+        result = await response.json();
+      } catch {
+        result = null;
+      }
+
+      if (!response.ok) {
+        const message = typeof result?.message === "string"
+          ? result.message
+          : typeof result?.error === "string"
+            ? result.error
+            : "Failed to save job post";
+        throw new Error(message);
+      }
+
+      return result?.data ?? result;
+    },
+    onSuccess: (_result, { status }) => {
+      setSavedStatus(status);
+      reset();
+      toast.success(
+        status === "DRAFT"
+          ? "Your job post has been saved as a draft."
+          : editing
+            ? "Your changes to the job post have been saved."
+            : "Your job post is ready and published to the marketplace."
+      );
+      router.push("/jobs");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save job post.",
+      );
+    },
+  });
+
+  const saveDraft = () => {
+    void handleSubmit((values) =>
+      saveJob.mutateAsync({ values, status: "DRAFT" }),
+    )();
   };
 
   return (
     <form
-      onSubmit={handleSubmit(publishJob)}
+      onSubmit={handleSubmit((values) => saveJob.mutateAsync({ values, status: "PUBLISHED" }))}
       className="mt-8 grid gap-5"
       noValidate
     >
-      {published && (
+      {savedStatus && (
         <p
           role="status"
           className="rounded-xl bg-[#e7f2e4] p-4 text-sm font-semibold text-[#4d784a]"
         >
-          {editing
-            ? "Your changes to the job post have been saved."
+          {savedStatus === "DRAFT" ? 'Your job post have been saved as a draft.' : editing ?
+            'Your changes to the job post have been saved.'
             : "Your job post is ready and published to the marketplace."}
         </p>
       )}
@@ -358,9 +464,9 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
                           : undefined;
                       const minimumDate = previousDueDate
                         ? addDays(
-                            startOfDay(parseISO(previousDueDate)),
-                            1,
-                          )
+                          startOfDay(parseISO(previousDueDate)),
+                          1,
+                        )
                         : addDays(startOfDay(new Date()), 1);
 
                       return (
@@ -438,27 +544,70 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
           <Icon icon="solar:paperclip-linear" width="18" />
           Attach project brief
           <input
-            {...register("attachments")}
+            {...register("attachments", {
+              validate: (files) => {
+                if (!files?.length) return true;
+                const allowed = Array.from(files).every((file) => file.type === "application/pdf" || file.type.startsWith("text/"));
+                const totalSize = Array.from(files).reduce((total, file) => total + file.size, 0);
+
+                if (files.length > 3) return "Add no more than 3 attachments";
+                if (!allowed) return "Attachments must be PDF or text files";
+                if (totalSize > 5 * 1024 * 1024) return "Total attachment size must not exceed 5MB";
+                return true;
+              }
+            })}
             type="file"
             multiple
+            accept="application/pdf, text/*"
             className="sr-only"
           />
         </label>
+        {errors.attachments?.message && (
+          <p className="text-[10px] font-medium text-[#a85252]">
+            {errors.attachments.message}
+          </p>
+        )}
+        {!!attachments.length && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {Array.from(attachments).map((file) => (
+              <div key={`${file.name}`} className="flex items-center gap-3 rounded-xl bg-[#f3f5f1] p-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#52784f]">
+                  <Icon
+                    icon={
+                      file.type === 'application/pdf'
+                        ? 'solar:file-text-linear'
+                        : 'solar:document-text-linear'
+                    }
+                    width='19'
+                  />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold">{file.name}</p>
+                  <p className="mt-0.5 text-[10px] text-[#7b8078]">
+                    {formatFileSize(file.size)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
 
       <div className="sticky bottom-4 flex justify-end gap-2 rounded-2xl border border-black/8 bg-white/95 p-4 shadow-[0_12px_40px_rgba(28,35,28,.12)] backdrop-blur">
         <button
           type="button"
-          className="h-11 rounded-xl border border-black/10 px-5 text-sm font-semibold"
+          disabled={!isValid || isSubmitting || saveJob.isPending}
+          onClick={saveDraft}
+          className="h-11 rounded-xl border border-black/10 px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Save draft
+          {saveJob?.isPending && saveJob.variables?.status === "DRAFT" ? "Saving draft…" : "Save draft"}
         </button>
         <button
           type="submit"
-          disabled={!isValid || isSubmitting}
+          disabled={!isValid || isSubmitting || saveJob.isPending}
           className="h-11 cursor-pointer rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#b8bcb6] disabled:text-white/80"
         >
-          {isSubmitting
+          {isSubmitting || saveJob.isPending
             ? editing
               ? "Saving…"
               : "Publishing…"
@@ -522,11 +671,10 @@ function FormField({
 }
 
 function inputClass(error: boolean, compact = false) {
-  return `${compact ? "mt-2 h-10 rounded-lg text-xs" : "mt-2 h-11 rounded-xl text-sm"} w-full border px-3 font-normal text-[#242724] outline-none transition ${
-    error
-      ? "border-[#bd6b6b] bg-[#fffafa] focus:border-[#a85252]"
-      : "border-black/10 focus:border-[#6e916a]"
-  }`;
+  return `${compact ? "mt-2 h-10 rounded-lg text-xs" : "mt-2 h-11 rounded-xl text-sm"} w-full border px-3 font-normal text-[#242724] outline-none transition ${error
+    ? "border-[#bd6b6b] bg-[#fffafa] focus:border-[#a85252]"
+    : "border-black/10 focus:border-[#6e916a]"
+    }`;
 }
 
 function RequiredMark() {
@@ -547,4 +695,10 @@ function normalizeDueDate(dueDate: string) {
   const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
   const day = String(parsedDate.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
