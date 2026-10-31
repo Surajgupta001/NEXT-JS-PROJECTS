@@ -1,0 +1,1 @@
+ALTER TABLE "job_posts" ALTER COLUMN "expected_duration" SET NOT NULL;

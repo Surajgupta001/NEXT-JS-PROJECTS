@@ -80,6 +80,7 @@ export const job_posts = pgTable("job_posts", {
     title: text("title").notNull(),
     description: text("description").notNull(),
     expertise_level: text("expertise_level").notNull(),
+    expected_duration: text("expected_duration").notNull(),
     skills: text("skills").array().notNull().default([]),
     total_budget: numeric("total_budget", {
         precision: 9,

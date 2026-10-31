@@ -1,0 +1,1 @@
+ALTER TABLE "job_posts" ADD COLUMN "expected_duration" text;
