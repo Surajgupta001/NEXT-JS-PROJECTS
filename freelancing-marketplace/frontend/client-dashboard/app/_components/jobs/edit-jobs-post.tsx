@@ -47,7 +47,7 @@ const EditJobPost = ({ jobId }: { jobId: string }) => {
         }
     });
 
-    if (isLoading) return <div className='h-96 animate-pulse rounded-2xl border border-black/6 bg-white' />
+    if (isLoading) return <div className='bg-white border h-96 animate-pulse rounded-2xl border-black/6' />
     if (error || !job) return <div className='rounded-2xl border border-black/8 bg-white p-8 text-center text-sm text-[#737970]'>{error?.message || 'Job post could not be loaded'}</div>
     if (job.status === 'HIRED') return <LockedJob />
 
@@ -56,7 +56,7 @@ const EditJobPost = ({ jobId }: { jobId: string }) => {
         title: job.title,
         description: job.description,
         level: job.expertise_level,
-        duration: job.expected_duration,
+        duration: job.expected_duration ?? "",
         skills: job.skills,
         milestones: job.milestones.map(({ title, budget, dueDate }) => ({
             title,
@@ -102,7 +102,7 @@ function PageHeader() {
 
 function LockedJob() {
     return (
-        <section className='mx-auto max-w-2xl rounded-2xl border border-black/8 bg-white p-7 text-center sm:p-10'>
+        <section className='max-w-2xl mx-auto text-center bg-white border rounded-2xl border-black/8 p-7 sm:p-10'>
             <span className='mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f1f0e7] text-[#766f47]'>
                 <Icon icon="solar:lock-keyhole-linear" width="30" />
                 <span>

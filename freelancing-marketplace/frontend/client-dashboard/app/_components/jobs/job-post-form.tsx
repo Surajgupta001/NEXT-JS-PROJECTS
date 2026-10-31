@@ -58,6 +58,19 @@ type JobAttachment = {
   fileSize: number;
 };
 
+const durationOptions = [
+  "Less than 1 month",
+  "1–2 months",
+  "3–6 months",
+  "6+ months",
+] as const;
+
+const normalizeDuration = (duration?: string) => {
+  const normalized = duration?.trim().replace(/\s*[-–—]\s*/g, "–");
+
+  return durationOptions.find((option) => option === normalized) ?? "";
+};
+
 const fileToAttachment = (file: File): Promise<JobAttachment> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -74,10 +87,15 @@ const fileToAttachment = (file: File): Promise<JobAttachment> =>
   });
 
 export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
+
   const editing = Boolean(initialJob);
   const router = useRouter();
+
   const { getToken } = useAuth();
+
   const [savedStatus, setSavedStatus] = useState<"DRAFT" | "PUBLISHED" | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const {
     control,
     register,
@@ -85,14 +103,14 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
     getValues,
     trigger,
     reset,
-    formState: { errors, isValid, isSubmitting },
+    formState: { errors, isValid, isSubmitting, dirtyFields },
   } = useForm<JobPostValues>({
     mode: "onChange",
     defaultValues: {
       title: initialJob?.title ?? "",
       description: initialJob?.description ?? "",
       expertise: initialJob?.level ?? "",
-      duration: initialJob?.duration ?? "",
+      duration: normalizeDuration(initialJob?.duration),
       skills: initialJob?.skills.join(", ") ?? "",
       milestones: initialJob?.milestones.map((milestone) => ({
         title: milestone.title,
@@ -106,9 +124,6 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
     },
   });
 
-  // When editing, default values are pre-filled but react-hook-form
-  // starts with isValid=false until fields are touched. Trigger full
-  // validation on mount so the Save buttons are enabled right away.
   useEffect(() => {
     if (editing) {
       void trigger();
@@ -131,6 +146,7 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
   const questions = useWatch({ control, name: "questions" }) ?? [];
   const attachments = useWatch({ control, name: "attachments" }) ?? [];
   const existingAttachments = useWatch({ control, name: "existingAttachments" }) ?? [];
+  const hasChanges = Boolean(dirtyFields.title || dirtyFields.description || dirtyFields.expertise || dirtyFields.duration || dirtyFields.skills || dirtyFields.milestones || dirtyFields.questions || dirtyFields.attachments);
   const totalBudget = milestones.reduce(
     (total, milestone) =>
       total +
@@ -231,10 +247,42 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
     )();
   };
 
+  const deleteJob = useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+
+      if (!token) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/jobs/${initialJob?.id}?role=client`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to delete job post");
+      }
+    },
+
+    onSuccess: () => {
+      toast.success("Your job post has been deleted.");
+      router.push("/jobs");
+    },
+
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete job post.");
+    }
+  });
+
   return (
     <form
       onSubmit={handleSubmit((values) => saveJob.mutateAsync({ values, status: "PUBLISHED" }))}
-      className="mt-8 grid gap-5"
+      className="grid gap-5 mt-8"
       noValidate
     >
       {savedStatus && (
@@ -326,10 +374,9 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
               className={`${inputClass(Boolean(errors.duration))} bg-white`}
             >
               <option value="">Select duration</option>
-              <option>Less than 1 month</option>
-              <option>1–2 months</option>
-              <option>3–6 months</option>
-              <option>6+ months</option>
+              {durationOptions.map((duration) => (
+                <option key={duration}>{duration}</option>
+              ))}
             </select>
           </FormField>
         </div>
@@ -515,7 +562,7 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
           type="button"
           disabled={milestoneIncomplete}
           onClick={() => appendMilestone({ title: "", amount: 0, due: "" })}
-          className="inline-flex h-10 cursor-pointer items-center gap-2 justify-self-start rounded-xl border border-black/10 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center h-10 gap-2 px-4 text-xs font-semibold border cursor-pointer justify-self-start rounded-xl border-black/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Icon icon="solar:add-circle-linear" width="17" />
           Add milestone
@@ -536,7 +583,7 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
               type="button"
               aria-label={`Remove screening question ${index + 1}`}
               onClick={() => removeQuestion(index)}
-              className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-black/10"
+              className="flex items-center justify-center border cursor-pointer h-11 w-11 shrink-0 rounded-xl border-black/10"
             >
               <Icon icon="solar:close-circle-linear" width="18" />
             </button>
@@ -546,7 +593,7 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
           type="button"
           disabled={questionIncomplete}
           onClick={() => appendQuestion({ value: "" })}
-          className="inline-flex h-10 cursor-pointer items-center gap-2 justify-self-start rounded-xl border border-black/10 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center h-10 gap-2 px-4 text-xs font-semibold border cursor-pointer justify-self-start rounded-xl border-black/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Icon icon="solar:add-circle-linear" width="17" />
           Add question
@@ -592,7 +639,7 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
                   />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold">{file.name}</p>
+                  <p className="text-xs font-semibold truncate">{file.name}</p>
                   <p className="mt-0.5 text-[10px] text-[#7b8078]">
                     {formatFileSize(file.size)}
                   </p>
@@ -612,7 +659,7 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
                   />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold">{file.fileName}</p>
+                  <p className="text-xs font-semibold truncate">{file.fileName}</p>
                   <p className="mt-0.5 text-[10px] text-[#7b8078]">
                     {formatFileSize(file.fileSize)}
                   </p>
@@ -623,22 +670,74 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
         )}
       </Section>
       <div className="sticky bottom-4 flex justify-end gap-2 rounded-2xl border border-black/8 bg-white/95 p-4 shadow-[0_12px_40px_rgba(28,35,28,.12)] backdrop-blur">
-        <button
-          type="button"
-          disabled={!isValid || isSubmitting || saveJob.isPending}
-          onClick={saveDraft}
-          className="h-11 rounded-xl border border-black/10 px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {saveJob?.isPending && saveJob.variables?.status === "DRAFT" ? "Saving draft…" : "Save draft"}
-        </button>
+        {editing && (
+          <button
+            type="button"
+            disabled={deleteJob.isPending || saveJob.isPending}
+            onClick={() => setConfirmDelete(true)}
+            className="px-5 text-sm font-semibold text-red-400 border h-11 rounded-xl border-black/10 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Delete job post
+          </button>
+        )}
+        {!editing && (
+          <button
+            type="button"
+            disabled={!isValid || isSubmitting || saveJob.isPending}
+            onClick={saveDraft}
+            className="px-5 text-sm font-semibold border h-11 rounded-xl border-black/10 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {saveJob?.isPending && saveJob.variables?.status === "DRAFT" ? "Saving draft…" : "Save draft"}
+          </button>
+        )}
         <button
           type="submit"
-          disabled={!isValid || isSubmitting || saveJob.isPending}
+          disabled={!isValid || isSubmitting || saveJob.isPending || (editing && !hasChanges)}
           className="h-11 cursor-pointer rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#b8bcb6] disabled:text-white/80"
         >
-          {isSubmitting || saveJob.isPending ? editing ? "Saving…" : "Publishing…" : editing ? "Save changes" : "Publish job"}
+          {isSubmitting ? editing ? "Saving…" : "Publishing…" : editing ? "Save changes" : "Publish job"}
         </button>
       </div>
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#182018]/45 p-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-job-post-title"
+            className="w-full max-w-md p-6 bg-white shadow rounded-2xl "
+          >
+            <span className="flex items-center justify-center h-11 w-11 rounded-xl bg-[#f8eeee] text-[#9b4f4f]">
+              <Icon icon='solar:trash-bin-trash-linear' width={21} />
+            </span>
+            <h2
+              id="delete-job-post-title"
+              className="mt-4 text-xl font-semibold"
+            >
+              Delete this job post?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#737970]">
+              This permanently removes the job post and its uploaded attachments. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="px-5 text-sm font-semibold border border-black/11 h-11 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteJob.isPending}
+                onClick={() => deleteJob.mutate()}
+                className="h-11 rounded-xl bg-[#9b4f4f] px-5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {deleteJob.isPending ? "Deleting…" : "Delete job post"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
@@ -653,12 +752,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="grid gap-5 rounded-2xl border border-black/8 bg-white p-5 sm:p-6">
+    <section className="grid gap-5 p-5 bg-white border rounded-2xl border-black/8 sm:p-6">
       <header>
         <h2 className="font-semibold">{title}</h2>
         <p className="mt-1 text-xs text-[#7b8078]">{detail}</p>
       </header>
-      <div className="grid gap-5 border-t border-black/7 pt-5">
+      <div className="grid gap-5 pt-5 border-t border-black/7">
         {children}
       </div>
     </section>
