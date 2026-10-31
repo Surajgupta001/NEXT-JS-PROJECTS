@@ -1,0 +1,118 @@
+'use client';
+
+import { useAuth } from '@clerk/nextjs'
+import { useQuery } from '@tanstack/react-query';
+import { InitialJobPost, JobPostForm } from './job-post-form';
+import Link from 'next/link';
+import { Icon } from '@iconify/react';
+
+type JobPostResponse = {
+    id: string;
+    title: string;
+    description: string;
+    expertise_level: string;
+    expected_duration: string;
+    skills: string[];
+    milestones: {
+        title: string;
+        budget: number;
+        dueDate: string;
+    }[];
+    screening_questions: string[] | null;
+    attachments: InitialJobPost['attachments'] | null;
+    status: string;
+}
+
+const EditJobPost = ({ jobId }: { jobId: string }) => {
+    const { getToken } = useAuth();
+
+    const { data: job, isLoading, error } = useQuery({
+        queryKey: ['client-job-post', jobId],
+        queryFn: async () => {
+            const token = await getToken();
+            if (!token) {
+                throw new Error('Your session has expired. Please log in again.');
+            }
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/jobs/${jobId}?role=client`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Job post could not be loaded');
+            }
+            return result.data as JobPostResponse;
+        }
+    });
+
+    if (isLoading) return <div className='h-96 animate-pulse rounded-2xl border border-black/6 bg-white' />
+    if (error || !job) return <div className='rounded-2xl border border-black/8 bg-white p-8 text-center text-sm text-[#737970]'>{error?.message || 'Job post could not be loaded'}</div>
+    if (job.status === 'HIRED') return <LockedJob />
+
+    const initialJob: InitialJobPost = {
+        id: job.id,
+        title: job.title,
+        description: job.description,
+        level: job.expertise_level,
+        duration: job.expected_duration,
+        skills: job.skills,
+        milestones: job.milestones.map(({ title, budget, dueDate }) => ({
+            title,
+            amount: budget,
+            due: dueDate,
+        })),
+        screeningQuestions: job.screening_questions ?? [],
+        attachments: job.attachments ?? [],
+    }
+
+    return (
+        <>
+            <PageHeader />
+            <JobPostForm initialJob={initialJob} />
+        </>
+    );
+};
+
+export default EditJobPost
+
+function PageHeader() {
+    return (
+        <div>
+            <Link
+                href="/jobs"
+                className='inline-flex items-center gap-1.5 text-xs font-semibold text-[#52784f]'
+            >
+                <Icon icon="solar:arrow-left-linear" width="15" />
+                Back to job posts
+            </Link>
+            <p className="text-xs font-semibold tracking-[.14em] text-[#62805f] uppercase mt-6">
+                Hiring
+            </p>
+            <p className="mt-2 text-3xl font-semibold tracking-[-.045em] sm:text-4xl">
+                Edit job post
+            </p>
+            <p className="mt-2 text-sm text-[#72776f]">
+                Update the scope, requirements, and milestones before making a hire.
+            </p>
+        </div>
+    )
+};
+
+function LockedJob() {
+    return (
+        <section className='mx-auto max-w-2xl rounded-2xl border border-black/8 bg-white p-7 text-center sm:p-10'>
+            <span className='mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f1f0e7] text-[#766f47]'>
+                <Icon icon="solar:lock-keyhole-linear" width="30" />
+                <span>
+                    <h1 className='mt-5 text-2xl font-semibold'>Job Post Locked</h1>
+                    <p className='mx-auto mt-3 max-lg text-sm leading-7 text-[#737970]'>You hired talent from this job post, so it can no longer be edited.</p>
+                    <Link href='/contracts' className='mt-6 inline-flex h-11 rounded-xl bg-[#252724] px-5 py-3 text-sm font-semibold text-white'>
+                        View Contracts
+                    </Link>
+                </span>
+            </span>
+        </section>
+    )
+};
