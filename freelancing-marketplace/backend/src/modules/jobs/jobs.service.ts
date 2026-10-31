@@ -93,12 +93,15 @@ export const updateJobPost = async (userId: string, jobId: string, data: Partial
         .where(and(
             eq(job_posts.id, jobId),
             eq(job_posts.client_id, userId),
-            eq(job_posts.status, "HIRED"),
         ))
         .limit(1);
 
     if (!existingJob) {
         throw new ApiError(404, "Editable job post not found.");
+    }
+
+    if (existingJob.status === "HIRED") {
+        throw new ApiError(403, "This job post cannot be edited because a hire has already been made.");
     }
 
     const { uploaded: attachments, uploadedIds } = await uploadDocuments(userId, data.attachments ?? []);
@@ -116,7 +119,6 @@ export const updateJobPost = async (userId: string, jobId: string, data: Partial
             .where(and(
                 eq(job_posts.id, jobId),
                 eq(job_posts.client_id, userId),
-                eq(job_posts.status, "HIRED"),
             ))
             .returning();
 

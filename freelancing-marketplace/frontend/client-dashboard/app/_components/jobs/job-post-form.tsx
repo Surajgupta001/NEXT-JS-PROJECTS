@@ -3,10 +3,10 @@
 import { Icon } from "@iconify/react";
 import { addDays, isAfter, parseISO, startOfDay } from "date-fns";
 import { Controller, useFieldArray, useForm, useWatch, type FieldError } from "react-hook-form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DatePickerField } from "./date-picker-field";
 import { useMutation } from "@tanstack/react-query";
-import { getToken } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -76,6 +76,7 @@ const fileToAttachment = (file: File): Promise<JobAttachment> =>
 export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
   const editing = Boolean(initialJob);
   const router = useRouter();
+  const { getToken } = useAuth();
   const [savedStatus, setSavedStatus] = useState<"DRAFT" | "PUBLISHED" | null>(null);
   const {
     control,
@@ -104,6 +105,15 @@ export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
       existingAttachments: initialJob?.attachments ?? [],
     },
   });
+
+  // When editing, default values are pre-filled but react-hook-form
+  // starts with isValid=false until fields are touched. Trigger full
+  // validation on mount so the Save buttons are enabled right away.
+  useEffect(() => {
+    if (editing) {
+      void trigger();
+    }
+  }, [editing, trigger]);
 
   const {
     fields: milestoneFields,

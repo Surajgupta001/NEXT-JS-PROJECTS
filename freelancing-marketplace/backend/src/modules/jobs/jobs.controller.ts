@@ -74,8 +74,8 @@ const buildJobData = (body: Record<string, any>) => {
         const fileType = requireText(attachment.fileType, "Attachment file type");
         const fileUrl = requireText(attachment.fileUrl, "Attachment file URL");
 
-        if (fileType !== 'application/pdf' && !fileType.startsWith('image/')) {
-            throw new ApiError(400, "Attachment file type must be either PDF or an image.");
+        if (fileType !== 'application/pdf' && !fileType.startsWith('image/') && !fileType.startsWith('text/')) {
+            throw new ApiError(400, "Attachment file type must be either PDF, text, or an image.");
         }
 
         if (fileUrl.startsWith('data:') && !fileUrl.startsWith(`data:${fileType};base64,`)) {
@@ -95,6 +95,7 @@ const buildJobData = (body: Record<string, any>) => {
         title: requireText(body.title, "Job title"),
         description: requireText(body.description, "Job description"),
         expertise_level: requireText(body.expertise_level, "Expertise level"),
+        expected_duration: requireText(body.expected_duration, "Expected duration"),
         skills,
         total_budget: total_budget.toString(),
         milestones,
