@@ -4,7 +4,6 @@ import { Icon } from "@iconify/react";
 import { addDays, isAfter, parseISO, startOfDay } from "date-fns";
 import { Controller, useFieldArray, useForm, useWatch, type FieldError } from "react-hook-form";
 import { useState } from "react";
-import type { ClientJob } from "../data/client-data";
 import { DatePickerField } from "./date-picker-field";
 import { useMutation } from "@tanstack/react-query";
 import { getToken } from "@clerk/nextjs";
@@ -22,8 +21,33 @@ type JobPostValues = {
     amount: number;
     due: string;
   }[];
+  existingAttachments: StoredAttachment[];
   questions: { value: string }[];
   attachments?: FileList;
+};
+
+type StoredAttachment = {
+  fileId: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+};
+
+export type InitialJobPost = {
+  id: string;
+  title: string;
+  description: string;
+  level: string;
+  duration: string;
+  skills: string[];
+  screeningQuestions: string[] | null;
+  milestones: {
+    title: string;
+    amount: number;
+    due: string;
+  }[];
+  attachments: StoredAttachment[];
 };
 
 type JobAttachment = {
@@ -49,12 +73,10 @@ const fileToAttachment = (file: File): Promise<JobAttachment> =>
     reader.readAsDataURL(file);
   });
 
-export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
+export function JobPostForm({ initialJob }: { initialJob?: InitialJobPost }) {
   const editing = Boolean(initialJob);
   const router = useRouter();
-  const [savedStatus, setSavedStatus] = useState<
-    "DRAFT" | "PUBLISHED" | null
-  >(null);
+  const [savedStatus, setSavedStatus] = useState<"DRAFT" | "PUBLISHED" | null>(null);
   const {
     control,
     register,
@@ -71,16 +93,15 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
       expertise: initialJob?.level ?? "",
       duration: initialJob?.duration ?? "",
       skills: initialJob?.skills.join(", ") ?? "",
-      milestones:
-        initialJob?.milestones.map((milestone) => ({
-          title: milestone.title,
-          amount: milestone.amount,
-          due: normalizeDueDate(milestone.due),
-        })) ?? [{ title: "", amount: 0, due: "" }],
-      questions:
-        initialJob?.screeningQuestions.map((question) => ({
-          value: question,
-        })) ?? [{ value: "" }],
+      milestones: initialJob?.milestones.map((milestone) => ({
+        title: milestone.title,
+        amount: milestone.amount,
+        due: normalizeDueDate(milestone.due),
+      })) ?? [{ title: "", amount: 0, due: "" }],
+      questions: initialJob?.screeningQuestions?.map((question) => ({
+        value: question,
+      })) ?? [{ value: "" }],
+      existingAttachments: initialJob?.attachments ?? [],
     },
   });
 
@@ -99,6 +120,7 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
   const milestones = useWatch({ control, name: "milestones" }) ?? [];
   const questions = useWatch({ control, name: "questions" }) ?? [];
   const attachments = useWatch({ control, name: "attachments" }) ?? [];
+  const existingAttachments = useWatch({ control, name: "existingAttachments" }) ?? [];
   const totalBudget = milestones.reduce(
     (total, milestone) =>
       total +
@@ -150,9 +172,7 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
             dueDate: milestone.due,
           })),
           screening_questions: values.questions.map((question) => question.value).filter(Boolean),
-          attachments: await Promise.all(
-            Array.from(values.attachments ?? []).map(fileToAttachment)
-          ),
+          attachments: values?.attachments?.length ? await Promise.all(Array.from(values.attachments).map(fileToAttachment)) : initialJob?.attachments ?? [],
           status,
         }),
       });
@@ -254,8 +274,7 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
               required: "Describe the project and expected outcome.",
               minLength: {
                 value: 80,
-                message:
-                  "Add at least 80 characters so talent can scope the work.",
+                message: "Add at least 80 characters so talent can scope the work.",
               },
               maxLength: {
                 value: 5000,
@@ -267,7 +286,6 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
             className={`${inputClass(Boolean(errors.description))} h-auto resize-none py-3`}
           />
         </FormField>
-
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             label="Expertise level"
@@ -305,13 +323,11 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
             </select>
           </FormField>
         </div>
-
         <p className="rounded-xl bg-[#f3f5f1] p-3 text-xs text-[#737970]">
           All job posts are publicly visible in the OneMarketplace.io talent
           marketplace.
         </p>
       </Section>
-
       <Section
         title="Skills and discovery"
         detail="Tags help us match the job with the right independent professionals."
@@ -350,7 +366,6 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
             ))}
         </div>
       </Section>
-
       <Section
         title="Fixed budget and milestones"
         detail="The total fixed-price budget is the sum of all project milestones."
@@ -361,7 +376,6 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
             ${totalBudget.toLocaleString()}
           </p>
         </div>
-
         <div className="grid gap-3">
           {milestoneFields.map((field, index) => {
             const milestoneErrors = errors.milestones?.[index];
@@ -458,17 +472,8 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
                       },
                     }}
                     render={({ field: dueDateField }) => {
-                      const previousDueDate =
-                        index > 0
-                          ? milestones[index - 1]?.due
-                          : undefined;
-                      const minimumDate = previousDueDate
-                        ? addDays(
-                          startOfDay(parseISO(previousDueDate)),
-                          1,
-                        )
-                        : addDays(startOfDay(new Date()), 1);
-
+                      const previousDueDate = index > 0 ? milestones[index - 1]?.due : undefined;
+                      const minimumDate = previousDueDate ? addDays(startOfDay(parseISO(previousDueDate)), 1) : addDays(startOfDay(new Date()), 1);
                       return (
                         <DatePickerField
                           value={dueDateField.value}
@@ -496,20 +501,16 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
             );
           })}
         </div>
-
         <button
           type="button"
           disabled={milestoneIncomplete}
-          onClick={() =>
-            appendMilestone({ title: "", amount: 0, due: "" })
-          }
+          onClick={() => appendMilestone({ title: "", amount: 0, due: "" })}
           className="inline-flex h-10 cursor-pointer items-center gap-2 justify-self-start rounded-xl border border-black/10 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Icon icon="solar:add-circle-linear" width="17" />
           Add milestone
         </button>
       </Section>
-
       <Section
         title="Screening and attachments"
         detail="Ask focused questions and share files that clarify the project."
@@ -549,7 +550,6 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
                 if (!files?.length) return true;
                 const allowed = Array.from(files).every((file) => file.type === "application/pdf" || file.type.startsWith("text/"));
                 const totalSize = Array.from(files).reduce((total, file) => total + file.size, 0);
-
                 if (files.length > 3) return "Add no more than 3 attachments";
                 if (!allowed) return "Attachments must be PDF or text files";
                 if (totalSize > 5 * 1024 * 1024) return "Total attachment size must not exceed 5MB";
@@ -591,8 +591,27 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
             ))}
           </div>
         )}
+        {!attachments?.length && existingAttachments.length && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {Array.from(existingAttachments).map((file) => (
+              <a key={`${file.fileId}`} href={file.fileUrl} className="flex items-center gap-3 rounded-xl bg-[#f3f5f1] p-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#52784f]">
+                  <Icon
+                    icon={'solar:document-text-linear'}
+                    width='19'
+                  />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold">{file.fileName}</p>
+                  <p className="mt-0.5 text-[10px] text-[#7b8078]">
+                    {formatFileSize(file.fileSize)}
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
       </Section>
-
       <div className="sticky bottom-4 flex justify-end gap-2 rounded-2xl border border-black/8 bg-white/95 p-4 shadow-[0_12px_40px_rgba(28,35,28,.12)] backdrop-blur">
         <button
           type="button"
@@ -607,13 +626,7 @@ export function JobPostForm({ initialJob }: { initialJob?: ClientJob }) {
           disabled={!isValid || isSubmitting || saveJob.isPending}
           className="h-11 cursor-pointer rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#b8bcb6] disabled:text-white/80"
         >
-          {isSubmitting || saveJob.isPending
-            ? editing
-              ? "Saving…"
-              : "Publishing…"
-            : editing
-              ? "Save changes"
-              : "Publish job"}
+          {isSubmitting || saveJob.isPending ? editing ? "Saving…" : "Publishing…" : editing ? "Save changes" : "Publish job"}
         </button>
       </div>
     </form>

@@ -1,4 +1,5 @@
 'use client';
+
 import { useAuth } from '@clerk/nextjs';
 import { Icon } from '@iconify/react';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +17,7 @@ type JobPost = {
     total_budget: string;
     status: string;
     created_At: string | null;
-}
+};
 
 const JobPostsList = () => {
 
