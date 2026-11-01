@@ -1,5 +1,6 @@
+import { create } from "domain";
 import { desc, relations } from "drizzle-orm";
-import { boolean, jsonb, numeric, pgEnum, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const accountRole = pgEnum("account_role", ["FREELANCER", "CLIENT"]);
 
@@ -110,3 +111,54 @@ export const job_posts = pgTable("job_posts", {
     created_At: timestamp("created_At", { withTimezone: true }).defaultNow(),
     updated_At: timestamp("updated_At", { withTimezone: true }).defaultNow(),
 });
+
+export const connects = pgTable("connects", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    freelancer_id: text("freelancer_id").notNull().unique().references(() => freelancer_metadata.auth_id, { onDelete: "cascade" }),
+    connects: integer("connects").notNull().default(0),
+    created_At: timestamp("created_At", { withTimezone: true }).defaultNow(),
+    updated_At: timestamp("updated_At", { withTimezone: true }).defaultNow(),
+});
+
+export const connects_history = pgTable("connects_history", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    connects_id: uuid("connects_id").notNull().references(() => connects.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    description: text("description").notNull(),
+    amount: integer("amount").notNull(),
+    create_At: timestamp("create_At", { withTimezone: true }).defaultNow(),
+});
+
+export const connects_purchase_history = pgTable("connects_purchase_history", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    connects_id: uuid("connects_id").notNull().references(() => connects.id, { onDelete: "cascade" }),
+    purchased_connects: integer("purchased_connects").notNull(),
+    amount_paid: numeric("amount_paid").notNull(),
+    payment_id: text("payment_id").notNull().unique(),
+    status: text("status").notNull().default("PENDING"),
+    created_At: timestamp("created_At", { withTimezone: true }).defaultNow(),
+    updated_At: timestamp("updated_At", { withTimezone: true }).defaultNow(),
+});
+
+export const connectsRelations = relations(connects, ({ many, one }) => ({
+    freelancer: one(freelancer_metadata, {
+        fields: [connects.freelancer_id],
+        references: [freelancer_metadata.auth_id],
+    }),
+    history: many(connects_history),
+    purchase: many(connects_purchase_history),
+}));
+
+export const connectsHistoryRelations = relations(connects_history, ({ one }) => ({
+    balance: one(connects, {
+        fields: [connects_history.connects_id],
+        references: [connects.id],
+    }),
+}));
+
+export const connectsPurchaseHistoryRelations = relations(connects_purchase_history, ({ one }) => ({
+    balance: one(connects, {
+        fields: [connects_purchase_history.connects_id],
+        references: [connects.id],
+    }),
+}));
