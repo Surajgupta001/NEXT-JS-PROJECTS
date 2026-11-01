@@ -21,6 +21,7 @@
     "@clerk/backend": "^3.22.0",
     "@imagekit/nodejs": "^7.12.1",
     "@neondatabase/serverless": "^1.2.0",
+    "@oneminutelogs/express": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "drizzle-kit": "^0.31.11",
