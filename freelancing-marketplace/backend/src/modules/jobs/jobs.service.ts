@@ -143,12 +143,28 @@ export const updateJobPost = async (userId: string, jobId: string, data: Partial
 };
 
 export const deleteJobPost = async (userId: string, jobId: string) => {
+    const [existingJob] = await database
+        .select()
+        .from(job_posts)
+        .where(and(
+            eq(job_posts.id, jobId),
+            eq(job_posts.client_id, userId),
+        ))
+        .limit(1);
+
+    if (!existingJob) {
+        throw new ApiError(404, "Job post not found.");
+    }
+
+    if (existingJob.status === "HIRED") {
+        throw new ApiError(403, "This job post cannot be deleted because a hire has already been made.");
+    }
+
     const [job] = await database
         .delete(job_posts)
         .where(and(
             eq(job_posts.id, jobId),
             eq(job_posts.client_id, userId),
-            eq(job_posts.status, "HIRED"),
         ))
         .returning();
 

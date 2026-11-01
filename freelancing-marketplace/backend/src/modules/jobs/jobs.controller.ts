@@ -2,7 +2,7 @@ import { request, RequestHandler, response } from "express";
 import { ApiError } from "../../utils/api-error.js";
 import { randomUUID } from "crypto";
 import { asynchandler } from "../../utils/async-handler.js";
-import { createJobPost, getJobPosts, updateJobPost } from "./jobs.service.js";
+import { createJobPost, deleteJobPost, getJobPosts, updateJobPost } from "./jobs.service.js";
 
 const requireClient = (request: Parameters<RequestHandler>[0]) => {
     const auth = request.auth!;
@@ -156,10 +156,9 @@ export const editClientJobPost: RequestHandler = asynchandler(async (request, re
 export const removeClientJobPost: RequestHandler = asynchandler(async (request, response) => {
     const auth = requireClient(request);
 
-    await updateJobPost(
+    await deleteJobPost(
         auth.userId,
         requireText(request.params.jobId, "Job ID"),
-        { status: "DELETED" },
     );
 
     response.status(200).json({
