@@ -31,4 +31,5 @@ export const env = {
         database: parseRedisDatabase(process.env.REDIS_DATABASE),
     },
     imagekitPrivateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+    oneMinuteLogsApiKey: process.env.ONE_MINUTE_LOGS_API_KEY,
 } as const;
