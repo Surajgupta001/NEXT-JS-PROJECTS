@@ -1,7 +1,7 @@
-import { request, RequestHandler, response } from "express";
-import { ApiError } from "../../utils/api-error.js";
 import { randomUUID } from "crypto";
-import { asynchandler } from "../../utils/async-handler.js";
+import { RequestHandler } from "express";
+import { ApiError } from "../../utils/api-error.js";
+import { asyncHandler } from "../../utils/async-handler.js";
 import { createJobPost, deleteJobPost, getJobPosts, updateJobPost } from "./jobs.service.js";
 
 const requireClient = (request: Parameters<RequestHandler>[0]) => {
@@ -111,7 +111,7 @@ const buildJobData = (body: Record<string, any>) => {
 };
 
 
-export const createClientJobPost: RequestHandler = asynchandler(async (request, response) => {
+export const createClientJobPost: RequestHandler = asyncHandler(async (request, response) => {
     const auth = requireClient(request);
     const data = buildJobData(request.body as Record<string, any>);
     const job = await createJobPost(auth.userId, {
@@ -125,7 +125,7 @@ export const createClientJobPost: RequestHandler = asynchandler(async (request, 
     });
 });
 
-export const getClientJobPosts: RequestHandler = asynchandler(async (request, response) => {
+export const getClientJobPosts: RequestHandler = asyncHandler(async (request, response) => {
     const auth = requireClient(request);
     const jobId = typeof request.params.jobId === "string" ? request.params.jobId : undefined;
     const jobs = await getJobPosts(auth.userId, jobId);
@@ -137,7 +137,7 @@ export const getClientJobPosts: RequestHandler = asynchandler(async (request, re
     });
 });
 
-export const editClientJobPost: RequestHandler = asynchandler(async (request, response) => {
+export const editClientJobPost: RequestHandler = asyncHandler(async (request, response) => {
     const auth = requireClient(request);
 
     const job = await updateJobPost(
@@ -153,7 +153,7 @@ export const editClientJobPost: RequestHandler = asynchandler(async (request, re
     });
 });
 
-export const removeClientJobPost: RequestHandler = asynchandler(async (request, response) => {
+export const removeClientJobPost: RequestHandler = asyncHandler(async (request, response) => {
     const auth = requireClient(request);
 
     await deleteJobPost(

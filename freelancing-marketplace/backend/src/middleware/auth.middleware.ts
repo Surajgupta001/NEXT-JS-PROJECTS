@@ -1,13 +1,13 @@
 import { verifyToken } from '@clerk/backend';
+import { and, eq } from 'drizzle-orm';
 import { RequestHandler } from "express";
-import { env } from '../config/env.js';
-import { ApiError } from "../utils/api-error.js";
-import { asynchandler } from "../utils/async-handler.js";
 import { ACCOUNT_AUTH_CACHE_TTL_SECONDS, getAccountAuthCacheKey } from '../config/constants.js';
+import { env } from '../config/env.js';
 import { redis } from '../config/redis.js';
 import { database } from '../database/client.js';
 import { accounts } from '../database/schema.js';
-import { and, eq } from 'drizzle-orm';
+import { ApiError } from "../utils/api-error.js";
+import { asyncHandler } from "../utils/async-handler.js";
 
 const accountRoles = ['client', 'freelancer'] as const;
 
@@ -25,7 +25,7 @@ const isAccountRole = (value: unknown): value is AccountRole => {
 }
 
 const getBearerToken = (authorizationHeader: string | undefined) => {
-    
+
     if (!authorizationHeader?.startsWith('Bearer ')) {
         return null;
     }
@@ -75,7 +75,7 @@ const isAccountAvailable = async (
     return accountAuth;
 }
 
-export const isAuthenticated: RequestHandler = asynchandler(async (request, _response, next) => {
+export const isAuthenticated: RequestHandler = asyncHandler(async (request, _response, next) => {
     const token = getBearerToken(request?.headers.authorization);
     const requestedRole = request.body?.role ?? request?.query.role;
 

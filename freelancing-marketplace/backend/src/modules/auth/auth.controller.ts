@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
-import { ApiError } from "../../utils/api-error.js";
 import { ApiResponse } from "../../types/common.types.js";
-import { asynchandler } from "../../utils/async-handler.js";
+import { ApiError } from "../../utils/api-error.js";
+import { asyncHandler } from "../../utils/async-handler.js";
 import { receiveSignup } from "./auth.service.js";
 
 interface AuthStatusData {
@@ -28,7 +28,7 @@ export const getAuthStatus: RequestHandler = async (request, response) => {
     response.status(200).json(body);
 };
 
-export const signUp: RequestHandler = asynchandler(async (request, response) => {
+export const signUp: RequestHandler = asyncHandler(async (request, response) => {
     if (!request.auth) {
         throw new ApiError(401, 'Authentication required');
     }

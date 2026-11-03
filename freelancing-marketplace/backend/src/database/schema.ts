@@ -126,7 +126,7 @@ export const connects_history = pgTable("connects_history", {
     type: text("type").notNull(),
     description: text("description").notNull(),
     amount: integer("amount").notNull(),
-    create_At: timestamp("create_At", { withTimezone: true }).defaultNow(),
+    created_At: timestamp("create_At", { withTimezone: true }).defaultNow(),
 });
 
 export const connects_purchase_history = pgTable("connects_purchase_history", {

@@ -1,11 +1,11 @@
 import { RequestHandler } from "express";
-import { asynchandler } from "../../utils/async-handler.js";
-import { ApiError } from "../../utils/api-error.js";
-import { ClientMetadataData, ClientProfileData, getClientProfile, SaveClientProfile, SaveClientProfileInput, } from "./client.service.js";
-import { ApiResponse } from "../../types/common.types.js";
 import { requiredText, requireWebsite } from "../../config/constants.js";
+import { ApiResponse } from "../../types/common.types.js";
+import { ApiError } from "../../utils/api-error.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+import { ClientMetadataData, ClientProfileData, getClientProfile, SaveClientProfile, SaveClientProfileInput, } from "./client.service.js";
 
-export const getLoggedInClientProfile: RequestHandler = asynchandler(async (request, response) => {
+export const getLoggedInClientProfile: RequestHandler = asyncHandler(async (request, response) => {
 
     if (!request.auth) {
         throw new ApiError(401, 'Authentication required');
@@ -34,7 +34,7 @@ interface ClientProfileBody {
     companyDescription?: string;
 };
 
-export const upsertClientProfile: RequestHandler = asynchandler(async (request, response) => {
+export const upsertClientProfile: RequestHandler = asyncHandler(async (request, response) => {
     if (!request.auth) {
         throw new ApiError(401, 'Authentication required');
     }

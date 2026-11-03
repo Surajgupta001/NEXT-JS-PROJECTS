@@ -8,6 +8,7 @@ import { imagekit } from '../../config/imagekit.js';
 import { randomUUID } from "node:crypto";
 import { redis } from "../../config/redis.js";
 import { ACCOUNT_AUTH_CACHE_TTL_SECONDS, getAccountAuthCacheKey } from "../../config/constants.js";
+import { addConnects } from "../connects/connects.service.js";
 
 export const getFreelancerProfile = async (userId: string): Promise<FreeLancerProfileData | null> => {
     const [result] = await database
@@ -95,7 +96,7 @@ const uploadPortfolioImages = async (userId: string, portfolios: PortfolioData[]
     }
 };
 
-export const saveFreelancerProfile = async (input: SaveFreelancerProfileInput): Promise<FreeLancerProfileData> => {
+export const saveFreelancerProfile = async (input: SaveFreelancerProfileInput, isOnboarded: Boolean | undefined): Promise<FreeLancerProfileData> => {
     const existingImages = await database
     .select({
         cover_image: freelancer_portfolios.cover_image
@@ -194,6 +195,14 @@ export const saveFreelancerProfile = async (input: SaveFreelancerProfileInput): 
         .filter((filterId) => filterId && !retainedImageIds.has(filterId))
         .map((filedId) => imagekit.files.delete(filedId))
     );
+
+    try {
+        if (!isOnboarded) {
+            await addConnects(input.userId);
+        }
+    } catch (error) {
+        console.log('Failed to add initial connects for freelancer:', error);
+    }
 
     await redis.setEx(
         getAccountAuthCacheKey(input.userId, 'freelancer'),
