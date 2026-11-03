@@ -1,12 +1,12 @@
 import { RequestHandler } from "express";
-import { ApiError } from "../../utils/api-error.js";
-import { asynchandler } from "../../utils/async-handler.js";
-import { ApiResponse } from "../../types/common.types.js";
-import { FreeLancerProfileData, SaveFreelancerProfileInput } from "./@types.js";
 import { requiredText } from "../../config/constants.js";
+import { ApiResponse } from "../../types/common.types.js";
+import { ApiError } from "../../utils/api-error.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+import { FreeLancerProfileData, SaveFreelancerProfileInput } from "./@types.js";
 import { getFreelancerProfile, saveFreelancerProfile } from "./freelancer.service.js";
 
-const requireFreelancer = (request: Parameters<RequestHandler>[0]) => {
+export const requireFreelancer = (request: Parameters<RequestHandler>[0]) => {
     if (!request.auth) {
         throw new ApiError(401, 'Authentication is required');
     }
@@ -18,7 +18,7 @@ const requireFreelancer = (request: Parameters<RequestHandler>[0]) => {
     return request.auth;
 };
 
-export const getLoggedInFreelancerProfile: RequestHandler = asynchandler(async (request, response) => {
+export const getLoggedInFreelancerProfile: RequestHandler = asyncHandler(async (request, response) => {
     const auth = requireFreelancer(request);
     const profile = await getFreelancerProfile(auth.userId);
     const body: ApiResponse<FreeLancerProfileData | null> = {
@@ -29,7 +29,7 @@ export const getLoggedInFreelancerProfile: RequestHandler = asynchandler(async (
     response.status(200).json(body);
 });
 
-export const upsertFreelancerProfile: RequestHandler = asynchandler(async (request, response) => {
+export const upsertFreelancerProfile: RequestHandler = asyncHandler(async (request, response) => {
     const auth = requireFreelancer(request);
     const metadata = request.body?.freelancer_metadata as | Record<string, any> | undefined;
     const portfolios = request.body?.freelancer_portfolios as any;
@@ -104,7 +104,7 @@ export const upsertFreelancerProfile: RequestHandler = asynchandler(async (reque
         }),
     };
 
-    const profile = await saveFreelancerProfile(input);
+    const profile = await saveFreelancerProfile(input, request.auth?.accountExists);
     const body: ApiResponse<FreeLancerProfileData> = {
         success: true,
         message: 'Freelancer profile saved successfully',
