@@ -91,8 +91,14 @@ export const returnConnects = async (freelancerId: string, description: string) 
 };
 
 export const getConnectsHistory = async (freelancerId: string) => {
-    await database
-        .select()
+    return database
+        .select({
+            id: connects_history.id,
+            type: connects_history.type,
+            description: connects_history.description,
+            amount: connects_history.amount,
+            created_At: connects_history.created_At,
+        })
         .from(connects_history)
         .innerJoin(connects, eq(connects_history.connects_id, connects.id))
         .where(eq(connects.freelancer_id, freelancerId))
