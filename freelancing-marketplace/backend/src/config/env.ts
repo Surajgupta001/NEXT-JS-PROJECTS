@@ -32,4 +32,7 @@ export const env = {
     },
     imagekitPrivateKey: process.env.IMAGEKIT_PRIVATE_KEY,
     oneMinuteLogsApiKey: process.env.ONE_MINUTE_LOGS_API_KEY,
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    freelancerDashboard: process.env.FREELANCER_DASHBOARD,
 } as const;

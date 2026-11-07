@@ -162,3 +162,4 @@ export const connectsPurchaseHistoryRelations = relations(connects_purchase_hist
         references: [connects.id],
     }),
 }));
+

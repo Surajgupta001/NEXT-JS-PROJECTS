@@ -7,6 +7,14 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { format } from 'timeago.js';
 
+type ConnectsHistoryItem = {
+  id: string;
+  type: string;
+  description: string;
+  amount: number;
+  created_At: string | Date;
+};
+
 const Panel = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
   <section className="overflow-hidden bg-white border rounded-2xl border-black/8">
     <header className="px-5 py-5 border-b border-black/7 sm:px-6">
@@ -40,14 +48,6 @@ const ConnectsHistorySkeleton = () => {
     </div>
   );
 }
-
-type ConnectsHistoryItem = {
-  id: string;
-  type: string;
-  description: string;
-  amount: number;
-  created_At: string | Date;
-};
 
 export function ConnectsPanel({ onBuy }: { onBuy: () => void }) {
 
