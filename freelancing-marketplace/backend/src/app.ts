@@ -15,10 +15,20 @@ app.use(express.json({ limit: '2mb' }));
 app.use(cors())
 app.use(express.urlencoded({ extended: true }));
 
+const apiKey = env.oneMinuteLogsApiKey!;
+
+if (!apiKey) {
+  console.warn('ONE_MINUTE_LOGS_API_KEY is not set. OneMinute Logs will not be enabled.');
+}
+
+app.disable('x-powered-by');
+app.use(`${API_PREFIX}/connects/webhook`, express.raw({
+  type: 'application/json',
+}))
 app.use(
   withOneMinuteLogs({
-    apiKey: env.oneMinuteLogsApiKey!,
-    projectName: 'backend',
+    apiKey,
+    projectName: 'freelance-marketplace',
     environment: process.env.NODE_ENV || 'development',
   }),
 );

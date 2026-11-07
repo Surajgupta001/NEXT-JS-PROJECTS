@@ -1,9 +1,11 @@
 import { and, desc, eq, gte, sql } from "drizzle-orm";
-import { CONNECTS_CACHE_TTL_SECONDS, getConnectsCacheKey, INITIAL_CONNECTS, PROPOSAL_CONNECTS } from "../../config/constants.js";
+import { CONNECTS_CACHE_TTL_SECONDS, CONNECTS_PLANS, ConnectsPlan, getConnectsCacheKey, INITIAL_CONNECTS, PROPOSAL_CONNECTS } from "../../config/constants.js";
 import { database } from "../../database/client.js";
-import { connects, connects_history } from "../../database/schema.js";
+import { connects, connects_history, connects_purchase_history } from "../../database/schema.js";
 import { ApiError } from "../../utils/api-error.js";
 import { redis } from "../../config/redis.js";
+import { env } from "../../config/env.js";
+import { stripe } from "../../config/stripe.js";
 
 const cacheBalance = (freelancerId: string, balance: number) => {
     return redis.setEx(
@@ -91,11 +93,90 @@ export const returnConnects = async (freelancerId: string, description: string) 
 };
 
 export const getConnectsHistory = async (freelancerId: string) => {
-    await database
-        .select()
+    return database
+        .select({
+            id: connects_history.id,
+            type: connects_history.type,
+            description: connects_history.description,
+            amount: connects_history.amount,
+            created_At: connects_history.created_At,
+        })
         .from(connects_history)
         .innerJoin(connects, eq(connects_history.connects_id, connects.id))
         .where(eq(connects.freelancer_id, freelancerId))
         .orderBy(desc(connects_history.created_At))
         .limit(10);
+};
+
+export const createConnectsCheckout = async (freelancerId: string, purchasedConnects: ConnectsPlan) => {
+    if (!env.stripeSecretKey || !env.freelancerDashboard) {
+        throw new ApiError(500, 'Connects payment are not configured.');
+    };
+
+    const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: [
+            {
+                quantity: 1,
+                price_data: {
+                    currency: 'usd',
+                    unit_amount: CONNECTS_PLANS[purchasedConnects],
+                    product_data: {
+                        name: `${purchasedConnects} connects`,
+                    },
+                },
+            },
+        ],
+        metadata: {
+            freelancerId,
+            purchasedConnects: String(purchasedConnects),
+        },
+        success_url: `${env.freelancerDashboard}/settings?section=connects&payment=success`,
+        cancel_url: `${env.freelancerDashboard}/settings?section=connects`,
+    });
+
+    if (!session.url) {
+        throw new ApiError(500, 'Failed to create checkout session.');
+    }
+
+    return session.url;
+};
+
+
+export const completeConnectsPurchase = async (freelancerId: string, purchasedConnects: ConnectsPlan, paymentId: string) => {
+    const balance = await database.transaction(async (tsx) => {
+        const [balance] = await tsx.insert(connects_purchase_history).values({
+            connects_id: sql`(SELECT ${connects.id} FROM ${connects} WHERE ${connects.freelancer_id} = ${freelancerId})`,
+            purchased_connects: purchasedConnects,
+            amount_paid: String(CONNECTS_PLANS[purchasedConnects] / 100),
+            payment_id: paymentId,
+            status: 'COMPLETED',
+        }).onConflictDoNothing({
+            target: connects_purchase_history.payment_id,
+        }).returning();
+
+        if (!balance) return;
+
+        const [updatedBalance] = await tsx.update(connects).set({
+            connects: sql`${connects.connects} + ${purchasedConnects}`,
+            updated_At: new Date(),
+        }).where(eq(connects.freelancer_id, freelancerId)).returning();
+
+        if (!updatedBalance) {
+            throw new ApiError(400, "Connects balance not found.");
+        }
+
+        await tsx.insert(connects_history).values({
+            connects_id: updatedBalance.id,
+            type: 'connects purchased',
+            description: `Purchased ${purchasedConnects} connects`,
+            amount: purchasedConnects,
+        });
+
+        return updatedBalance;
+    });
+
+    if (balance) {
+        await cacheBalance(freelancerId, balance.connects);
+    }
 };

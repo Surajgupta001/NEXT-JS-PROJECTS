@@ -11,6 +11,7 @@
     "db:generate": "npx drizzle-kit generate",
     "db:migrate": "npx drizzle-kit migrate",
     "db:push": "npx drizzle-kit push",
+    "db:seed:connects": "tsx src/database/seed-connects.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
@@ -28,6 +29,7 @@
     "drizzle-orm": "^0.45.3",
     "express": "^5.2.1",
     "redis": "^6.3.0",
+    "stripe": "^23.1.0",
     "ws": "^8.22.0"
   },
   "devDependencies": {

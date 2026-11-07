@@ -15,8 +15,14 @@ import { dashboardJobs } from "./_components/jobs/jobs-data";
 import { ProposalModal } from "./_components/jobs/proposal-modal";
 import type { Job } from "./_components/jobs/types";
 import { redirect } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth, useUser } from "@clerk/nextjs";
 
 export function FreelancerDashboard() {
+
+  const { user } = useUser();
+  const { getToken } = useAuth();
+
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("Best matches");
   const [saved, setSaved] = useState<number[]>([]);
@@ -29,6 +35,29 @@ export function FreelancerDashboard() {
     Number(Boolean(filters.minBudget || filters.maxBudget)) +
     Number(filters.proposalRange !== "Any number") +
     Number(filters.verifiedOnly);
+
+  const { data: connectsMetadata, isLoading: connectsLoading } = useQuery({
+    queryKey: ['connects'],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const token = await getToken();
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/connects?role=freelancer`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to fetch profile metadata');
+      }
+
+      return result.data;
+    }
+  });
 
   const visibleJobs = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -74,8 +103,8 @@ export function FreelancerDashboard() {
     <div className="min-h-svh bg-[#f4f6f2] font-(family-name:--font-dm-sans) text-[#242724]">
       <DashboardHeader />
 
-      <main className="mx-auto max-w-360 px-5 py-8 sm:px-8 lg:py-10">
-        <div className="mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+      <main className="px-5 py-8 mx-auto max-w-360 sm:px-8 lg:py-10">
+        <div className="flex flex-col justify-between gap-5 mb-8 lg:flex-row lg:items-end">
           <div>
             <p className="text-sm font-medium text-[#62805f]">
               Saturday, July 25
@@ -109,16 +138,15 @@ export function FreelancerDashboard() {
           <WorkspaceSidebar profileStrength={85} />
 
           <section className="min-w-0">
-            <div className="rounded-2xl border border-black/8 bg-white px-3 pt-3">
-              <div className="flex gap-1 overflow-x-auto border-b border-black/7 px-2">
+            <div className="px-3 pt-3 bg-white border rounded-2xl border-black/8">
+              <div className="flex gap-1 px-2 overflow-x-auto border-b border-black/7">
                 {["Best matches", "Most recent", "Saved jobs"].map((tab) => (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setActiveTab(tab)}
-                    className={`relative shrink-0 cursor-pointer px-4 py-3 text-sm font-semibold ${
-                      activeTab === tab ? "text-[#4d764a]" : "text-[#777c74]"
-                    }`}
+                    className={`relative shrink-0 cursor-pointer px-4 py-3 text-sm font-semibold ${activeTab === tab ? "text-[#4d764a]" : "text-[#777c74]"
+                      }`}
                   >
                     {tab}
                     {activeTab === tab && (
@@ -143,7 +171,7 @@ export function FreelancerDashboard() {
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4">
+            <div className="grid gap-4 mt-4">
               {visibleJobs.map((job) => (
                 <JobCard
                   key={job.id}
@@ -154,7 +182,7 @@ export function FreelancerDashboard() {
                 />
               ))}
               {!visibleJobs.length && (
-                <div className="rounded-2xl border border-dashed border-black/12 bg-white px-6 py-16 text-center">
+                <div className="px-6 py-16 text-center bg-white border border-dashed rounded-2xl border-black/12">
                   <Icon
                     icon="solar:case-minimalistic-linear"
                     width="34"
@@ -176,7 +204,7 @@ export function FreelancerDashboard() {
           </section>
 
           <aside className="grid gap-5 xl:sticky xl:top-24">
-            <section className="rounded-2xl border border-black/8 bg-white p-5">
+            <section className="p-5 bg-white border rounded-2xl border-black/8">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">Proposal activity</h2>
                 <Link
@@ -186,7 +214,7 @@ export function FreelancerDashboard() {
                   View all
                 </Link>
               </div>
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+              <div className="grid grid-cols-3 gap-2 mt-5 text-center">
                 {[
                   ["7", "Active"],
                   ["3", "Viewed"],
@@ -194,9 +222,8 @@ export function FreelancerDashboard() {
                 ].map(([value, label], index) => (
                   <div
                     key={label}
-                    className={`rounded-xl px-2 py-3 ${
-                      index === 2 ? "bg-[#eaf3e7]" : "bg-[#f2f4f0]"
-                    }`}
+                    className={`rounded-xl px-2 py-3 ${index === 2 ? "bg-[#eaf3e7]" : "bg-[#f2f4f0]"
+                      }`}
                   >
                     <strong
                       className={
@@ -209,10 +236,12 @@ export function FreelancerDashboard() {
                   </div>
                 ))}
               </div>
-              <div className="mt-5 border-t border-black/7 pt-4">
+              <div className="pt-4 mt-5 border-t border-black/7">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#777c74]">Available Connects</span>
-                  <strong>64</strong>
+                  <strong>
+                    {connectsLoading ? "..." : connectsMetadata?.connects ?? 0}
+                  </strong>
                 </div>
                 <button
                   type="button"
@@ -242,7 +271,7 @@ export function FreelancerDashboard() {
                 +$1,240 from last month
               </p>
               <div
-                className="mt-5 flex h-14 items-end gap-2"
+                className="flex items-end gap-2 mt-5 h-14"
                 aria-hidden="true"
               >
                 {[35, 52, 44, 70, 59, 86, 100].map((height, index) => (

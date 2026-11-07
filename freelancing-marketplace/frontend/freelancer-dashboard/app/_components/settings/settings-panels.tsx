@@ -2,30 +2,145 @@
 
 import { Icon } from "@iconify/react";
 import { useState } from "react";
-import { connectsHistory, earningsHistory } from "./settings-data";
+import { earningsHistory } from "./settings-data";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { useQuery } from "@tanstack/react-query";
+import { format } from 'timeago.js';
+
+type ConnectsHistoryItem = {
+  id: string;
+  type: string;
+  description: string;
+  amount: number;
+  created_At: string | Date;
+};
 
 const Panel = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
-  <section className="overflow-hidden rounded-2xl border border-black/8 bg-white">
-    <header className="border-b border-black/7 px-5 py-5 sm:px-6"><h2 className="text-lg font-semibold">{title}</h2><p className="mt-1 text-xs text-[#7b8078]">{description}</p></header>
+  <section className="overflow-hidden bg-white border rounded-2xl border-black/8">
+    <header className="px-5 py-5 border-b border-black/7 sm:px-6">
+      <h2 className="text-lg font-semibold">
+        {title}
+      </h2>
+      <p className="mt-1 text-xs text-[#7b8078]">
+        {description}
+      </p>
+    </header>
     {children}
   </section>
 );
 
+const ConnectsHistorySkeleton = () => {
+  return (
+    <div aria-label='Loading connects history' role='status'>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className={`flex animate-pulse items-center gap-4 px-5 py-4 sm:px-6 ${index ? "border-t border-black/6" : ""}`}
+        >
+          <span className="rounded-full h-9 w-9 shrink-0 bg-[#e9ece6]" />
+          <div className="flex-1 min-w-0">
+            <div className="h-3.5 w-36 rounded-full bg-[#e4e791]" />
+            <div className="h-3 max-w-full mt-2 rounded-full w-52 bg-[#eef0ec]" />
+          </div>
+          <span className="h-3.5 w-8 rounded-full bg-[#e4e7e1]" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ConnectsPanel({ onBuy }: { onBuy: () => void }) {
+
+  const { user } = useUser();
+  const { getToken } = useAuth();
+
+  const { data: connectsMetadata, isLoading: connectsMetadataLoading } = useQuery({
+    queryKey: ['connects'],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const token = await getToken();
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/connects?role=freelancer`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to fetch profile metadata');
+      }
+
+      if (!result.data || typeof result.data.connects !== 'number') {
+        throw new Error('Invalid connects balance response from the server');
+      }
+
+      return result.data as { connects: number };
+    }
+  });
+
+  const { data: connectsHistory, isLoading: connectsHistoryLoading } = useQuery({
+    queryKey: ['connects-history'],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const token = await getToken();
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URI}/connects/history?role=freelancer`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to fetch profile metadata');
+      }
+
+      if (!Array.isArray(result.data)) {
+        throw new Error('Invalid connects history response from the server');
+      }
+
+      return result.data as ConnectsHistoryItem[];
+    }
+  });
+
   return (
     <Panel title="Connects" description="Track how you use Connects and purchase more when you need them.">
-      <div className="flex flex-col justify-between gap-4 border-b border-black/7 p-5 sm:flex-row sm:items-center sm:p-6">
-        <div><p className="text-xs text-[#7b8078]">Available balance</p><p className="mt-1 text-3xl font-semibold">64 <span className="text-sm font-normal text-[#7b8078]">Connects</span></p></div>
-        <button type="button" onClick={onBuy} className="h-11 cursor-pointer rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white">Buy Connects</button>
+      <div className="flex flex-col justify-between gap-4 p-5 border-b border-black/7 sm:flex-row sm:items-center sm:p-6">
+        <div>
+          <p className="text-xs text-[#7b8078]">Available balance</p>
+          <p className="mt-1 text-3xl font-semibold">{connectsMetadata?.connects || 0}{' '}
+            <span className="text-sm font-normal text-[#7b8078]">
+              Connects
+            </span>
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onBuy}
+          className="h-11 cursor-pointer rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white">
+          Buy Connects
+        </button>
       </div>
+
       <div>
-        {connectsHistory.map((item, index) => (
-          <div key={item.id} className={`flex items-center gap-4 px-5 py-4 sm:px-6 ${index ? "border-t border-black/6" : ""}`}>
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.amount > 0 ? "bg-[#e7f2e4] text-[#4d784a]" : "bg-[#f1f0e7] text-[#766f47]"}`}><Icon icon={item.amount > 0 ? "solar:add-circle-linear" : "solar:plain-2-linear"} width="18" /></span>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.label}</p><p className="mt-1 truncate text-xs text-[#858a82]">{item.detail} · {item.date}</p></div>
-            <strong className={`text-sm ${item.amount > 0 ? "text-[#4d784a]" : "text-[#343833]"}`}>{item.amount > 0 ? "+" : ""}{item.amount}</strong>
+        {connectsHistoryLoading || connectsMetadataLoading ? (
+          <ConnectsHistorySkeleton />
+        ) : (
+          <div>
+            {connectsHistory?.map((item: ConnectsHistoryItem, index: number) => (
+              <div key={item.id} className={`flex items-center gap-4 px-5 py-4 sm:px-6 ${index ? "border-t border-black/6" : ""}`}>
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.amount > 0 ? "bg-[#e7f2e4] text-[#4d784a]" : "bg-[#f1f0e7] text-[#766f47]"}`}><Icon icon={item.amount > 0 ? "solar:add-circle-linear" : "solar:plain-2-linear"} width="18" /></span>
+                <div className="flex-1 min-w-0"><p className="text-sm font-semibold truncate">{item.type}</p><p className="mt-1 truncate text-xs text-[#858a82]">{item.description} · {format(item.created_At)}</p></div>
+                <strong className={`text-sm ${item.amount > 0 ? "text-[#4d784a]" : "text-[#343833]"}`}>{item.amount > 0 ? "+" : ""}{item.amount}</strong>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </Panel>
   );
@@ -40,7 +155,7 @@ export function EarningsPanel({
 }) {
   return (
     <Panel title="Earnings" description="Review payments from milestones and track when funds become available.">
-      <div className="grid gap-3 border-b border-black/7 p-5 sm:grid-cols-3 sm:p-6">
+      <div className="grid gap-3 p-5 border-b border-black/7 sm:grid-cols-3 sm:p-6">
         {[["Available", "$4,850"], ["Pending", "$3,500"], ["Lifetime earnings", "$86,420"]].map(([label, value]) => <div key={label} className="rounded-xl bg-[#f3f5f1] p-4"><p className="text-[11px] text-[#7b8078]">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p></div>)}
       </div>
       <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -52,7 +167,7 @@ export function EarningsPanel({
       </div>
       {earningsHistory.map((item, index) => (
         <div key={item.id} className={`flex items-center gap-4 px-5 py-4 sm:px-6 ${index ? "border-t border-black/6" : ""}`}>
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.milestone}</p><p className="mt-1 truncate text-xs text-[#858a82]">{item.client} · {item.date}</p></div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-semibold truncate">{item.milestone}</p><p className="mt-1 truncate text-xs text-[#858a82]">{item.client} · {item.date}</p></div>
           <div className="text-right"><p className="text-sm font-semibold">{item.amount}</p><p className="mt-1 text-[10px] text-[#6d826a]">{item.status}</p></div>
         </div>
       ))}
@@ -84,11 +199,11 @@ export function IdentityVerificationPanel() {
       description="Verify your identity to build trust and unlock marketplace contracts."
     >
       <div className="grid gap-5 p-5 sm:p-6">
-        <div className="flex flex-col gap-4 rounded-2xl border border-black/8 p-5 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-4 p-5 border rounded-2xl border-black/8 sm:flex-row sm:items-center">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#edf4ea] text-[#52784f]">
             <Icon icon="solar:user-id-linear" width="24" />
           </span>
-          <div className="min-w-0 flex-1">
+          <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold">Verify your identity</h3>
             <p className="mt-1 text-xs leading-5 text-[#7b8078]">
               {status === "required"
@@ -147,11 +262,11 @@ export function AgencyPanel() {
             Complete the agency profile, invite specialists, and choose which
             members can submit proposals on behalf of the agency.
           </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2 mt-6">
             <button type="button" className="h-11 cursor-pointer rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white">
               Open agency workspace
             </button>
-            <button type="button" className="h-11 cursor-pointer rounded-xl border border-black/10 px-5 text-sm font-semibold">
+            <button type="button" className="px-5 text-sm font-semibold border cursor-pointer h-11 rounded-xl border-black/10">
               Invite team members
             </button>
           </div>
@@ -216,7 +331,7 @@ export function AgencyPanel() {
             workspace.
           </label>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setSetupStarted(false)} className="h-11 cursor-pointer rounded-xl border border-black/10 px-5 text-sm font-semibold">
+            <button type="button" onClick={() => setSetupStarted(false)} className="px-5 text-sm font-semibold border cursor-pointer h-11 rounded-xl border-black/10">
               Back
             </button>
             <button type="submit" className="h-11 cursor-pointer rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white">
@@ -241,7 +356,7 @@ export function AgencyPanel() {
           <h3 className="mt-5 text-2xl font-semibold tracking-[-0.035em]">
             Win larger projects together.
           </h3>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-white/65">
+          <p className="max-w-xl mt-2 text-sm leading-6 text-white/65">
             An agency workspace lets you present a combined team, submit agency
             proposals, coordinate delivery, and manage shared contracts.
           </p>
@@ -256,7 +371,7 @@ export function AgencyPanel() {
             ["Invite specialists", "Build a trusted roster and assign clear agency roles.", "solar:users-group-rounded-linear"],
             ["Manage together", "Centralize proposals, contracts, messages, and payouts.", "solar:widget-5-linear"],
           ].map(([title, detail, icon]) => (
-            <article key={title} className="rounded-xl border border-black/7 p-4">
+            <article key={title} className="p-4 border rounded-xl border-black/7">
               <Icon icon={icon} width="21" className="text-[#52784f]" />
               <h4 className="mt-3 text-sm font-semibold">{title}</h4>
               <p className="mt-1.5 text-xs leading-5 text-[#7b8078]">{detail}</p>
@@ -279,7 +394,7 @@ export function AccountPanel({ kind }: { kind: "tax" | "security" | "notificatio
     <Panel title="Tax information" description="Provide the information required for compliant marketplace payouts.">
       <div className="grid gap-5 p-5 sm:p-6">
         <div className="rounded-xl border border-[#dfd3a9] bg-[#faf7eb] p-4 text-sm"><strong>Tax form requires attention</strong><p className="mt-1 text-xs leading-5 text-[#77705b]">Complete your tax residence and taxpayer identification before your next withdrawal.</p></div>
-        <div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-semibold">Tax residence<select className="mt-2 h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-normal"><option>Bangladesh</option></select></label><label className="text-xs font-semibold">Taxpayer identification number<input placeholder="Enter tax ID" className="mt-2 h-11 w-full rounded-xl border border-black/10 px-3 text-sm font-normal outline-none" /></label></div>
+        <div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-semibold">Tax residence<select className="w-full px-3 mt-2 text-sm font-normal bg-white border h-11 rounded-xl border-black/10"><option>Bangladesh</option></select></label><label className="text-xs font-semibold">Taxpayer identification number<input placeholder="Enter tax ID" className="w-full px-3 mt-2 text-sm font-normal border outline-none h-11 rounded-xl border-black/10" /></label></div>
         <button type="button" className="h-11 justify-self-start cursor-pointer rounded-xl bg-[#252724] px-5 text-sm font-semibold text-white">Save tax information</button>
       </div>
     </Panel>
@@ -288,15 +403,15 @@ export function AccountPanel({ kind }: { kind: "tax" | "security" | "notificatio
   if (kind === "security") return (
     <Panel title="Password & security" description="Protect your account and review active sessions.">
       <div className="grid gap-4 p-5 sm:p-6">
-        {[["Password", "Last changed 3 months ago", "Change password"], ["Two-factor authentication", "Add an extra layer of account protection", "Set up 2FA"], ["Active sessions", "2 devices currently signed in", "Review sessions"]].map(([title, detail, action]) => <div key={title} className="flex flex-col justify-between gap-3 rounded-xl border border-black/7 p-4 sm:flex-row sm:items-center"><div><h3 className="text-sm font-semibold">{title}</h3><p className="mt-1 text-xs text-[#7b8078]">{detail}</p></div><button type="button" className="h-9 cursor-pointer rounded-lg border border-black/10 px-3 text-xs font-semibold">{action}</button></div>)}
+        {[["Password", "Last changed 3 months ago", "Change password"], ["Two-factor authentication", "Add an extra layer of account protection", "Set up 2FA"], ["Active sessions", "2 devices currently signed in", "Review sessions"]].map(([title, detail, action]) => <div key={title} className="flex flex-col justify-between gap-3 p-4 border rounded-xl border-black/7 sm:flex-row sm:items-center"><div><h3 className="text-sm font-semibold">{title}</h3><p className="mt-1 text-xs text-[#7b8078]">{detail}</p></div><button type="button" className="px-3 text-xs font-semibold border rounded-lg cursor-pointer h-9 border-black/10">{action}</button></div>)}
       </div>
     </Panel>
   );
 
   return (
     <Panel title="Notification preferences" description="Control which account updates you receive.">
-      <div className="divide-y divide-black/6 p-5 sm:p-6">
-        {["Proposal and interview activity", "Contract and milestone updates", "Messages from clients", "Payments and withdrawals", "Product news and recommendations"].map((label, index) => <label key={label} className="flex cursor-pointer items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"><span className="text-sm font-medium">{label}</span><input type="checkbox" defaultChecked={index < 4} className="h-4 w-4 accent-[#5f875c]" /></label>)}
+      <div className="p-5 divide-y divide-black/6 sm:p-6">
+        {["Proposal and interview activity", "Contract and milestone updates", "Messages from clients", "Payments and withdrawals", "Product news and recommendations"].map((label, index) => <label key={label} className="flex items-center justify-between gap-4 py-4 cursor-pointer first:pt-0 last:pb-0"><span className="text-sm font-medium">{label}</span><input type="checkbox" defaultChecked={index < 4} className="h-4 w-4 accent-[#5f875c]" /></label>)}
       </div>
     </Panel>
   );
