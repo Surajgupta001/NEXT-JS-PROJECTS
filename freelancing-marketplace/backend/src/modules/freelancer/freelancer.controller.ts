@@ -104,11 +104,28 @@ export const upsertFreelancerProfile: RequestHandler = asyncHandler(async (reque
         }),
     };
 
-    const profile = await saveFreelancerProfile(input, request.auth?.accountExists);
+    const profile = await saveFreelancerProfile(input);
+    await request.logger.info({
+        message: "Freelancer profile saved successfully",
+        eventName: "freelancer.profile.saved",
+        attributes: {
+            userId: auth.userId,
+            sessionId: auth.sessionId || null,
+            role: auth.role,
+            portfoliosCount: input.portfolios.length,
+            skillsCount: input.skills.length,
+            languagesCount: input.languages.length,
+            isOnboarded: true,
+            subsystem: "freelancer-onboarding",
+            operation: "save-freelancer-profile",
+        },
+    });
+
     const body: ApiResponse<FreeLancerProfileData> = {
         success: true,
         message: 'Freelancer profile saved successfully',
         data: profile
     };
+
     response.status(200).json(body);
 });

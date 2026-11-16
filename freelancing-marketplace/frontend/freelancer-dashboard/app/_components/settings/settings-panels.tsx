@@ -73,11 +73,7 @@ export function ConnectsPanel({ onBuy }: { onBuy: () => void }) {
         throw new Error(result.message || 'Failed to fetch profile metadata');
       }
 
-      if (!result.data || typeof result.data.connects !== 'number') {
-        throw new Error('Invalid connects balance response from the server');
-      }
-
-      return result.data as { connects: number };
+      return result.data;
     }
   });
 
@@ -100,11 +96,7 @@ export function ConnectsPanel({ onBuy }: { onBuy: () => void }) {
         throw new Error(result.message || 'Failed to fetch profile metadata');
       }
 
-      if (!Array.isArray(result.data)) {
-        throw new Error('Invalid connects history response from the server');
-      }
-
-      return result.data as ConnectsHistoryItem[];
+      return result.data;
     }
   });
 

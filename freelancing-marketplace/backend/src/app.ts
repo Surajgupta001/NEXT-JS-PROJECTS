@@ -11,6 +11,9 @@ import { env } from './config/env.js';
 export const app = express();
 
 app.disable('x-powered-by');
+app.use(`${API_PREFIX}/connects/webhook`, express.raw({
+  type: 'application/json',
+}));
 app.use(express.json({ limit: '2mb' }));
 app.use(cors())
 app.use(express.urlencoded({ extended: true }));
@@ -22,9 +25,6 @@ if (!apiKey) {
 }
 
 app.disable('x-powered-by');
-app.use(`${API_PREFIX}/connects/webhook`, express.raw({
-  type: 'application/json',
-}))
 app.use(
   withOneMinuteLogs({
     apiKey,
