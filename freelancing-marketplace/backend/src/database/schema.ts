@@ -1,6 +1,7 @@
 import { create } from "domain";
 import { desc, relations } from "drizzle-orm";
 import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { stripe } from "../config/stripe.js";
 
 export const accountRole = pgEnum("account_role", ["FREELANCER", "CLIENT"]);
 
@@ -8,6 +9,7 @@ export const accounts = pgTable("accounts", {
     id: uuid("id").defaultRandom().primaryKey(),
     auth_id: text("auth_id").notNull().unique(),
     email: text("email").notNull(),
+    stripe_customer_id: text("stripe_customer_id").unique(),
     role: accountRole("role").default("CLIENT").notNull(),
     identityVerified: boolean("identityVerified").default(false),
     paymentMethodVerified: boolean("paymentMethodVerified").default(false),

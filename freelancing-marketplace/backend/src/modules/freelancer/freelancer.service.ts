@@ -96,7 +96,7 @@ const uploadPortfolioImages = async (userId: string, portfolios: PortfolioData[]
     }
 };
 
-export const saveFreelancerProfile = async (input: SaveFreelancerProfileInput, isOnboarded: Boolean | undefined): Promise<FreeLancerProfileData> => {
+export const saveFreelancerProfile = async (input: SaveFreelancerProfileInput): Promise<FreeLancerProfileData> => {
     const existingImages = await database
     .select({
         cover_image: freelancer_portfolios.cover_image
@@ -197,9 +197,7 @@ export const saveFreelancerProfile = async (input: SaveFreelancerProfileInput, i
     );
 
     try {
-        if (!isOnboarded) {
-            await addConnects(input.userId);
-        }
+        await addConnects(input.userId);
     } catch (error) {
         console.log('Failed to add initial connects for freelancer:', error);
     }

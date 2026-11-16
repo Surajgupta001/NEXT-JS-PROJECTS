@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
+import { useQueryClient } from "@tanstack/react-query";
 import { DashboardHeader } from "../_components/dashboard/dashboard-header";
 import { WorkspaceSidebar } from "../_components/dashboard/workspace-sidebar";
 import { EarningsStatementModal } from "../_components/settings/earnings-statement-modal";
@@ -32,8 +34,10 @@ const validSections: SettingsSectionId[] = [
 
 export function SettingsDashboard({
   initialSection,
+  paymentStatus,
 }: {
   initialSection?: string;
+  paymentStatus?: string;
 }) {
   const [section, setSection] = useState<SettingsSectionId>(
     validSections.includes(initialSection as SettingsSectionId)
@@ -42,7 +46,52 @@ export function SettingsDashboard({
   );
   const [modal, setModal] = useState<"connects" | "withdraw" | null>(null);
   const [statementOpen, setStatementOpen] = useState(false);
+  
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (paymentStatus !== "success") return;
+
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["connects"] }),
+      queryClient.invalidateQueries({ queryKey: ["connects-history"] })
+    ])
+  }, [paymentStatus, queryClient]);
+
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    if (searchParams.get("payment") !== "success" || !sessionId) return;
+
+    const confirmPurchase = async () => {
+      const token = await getToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URI}/connects/checkout/complete?role=freelancer&session_id=${encodeURIComponent(sessionId)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
+      );
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to confirm connects payment.");
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["connects"] }),
+        queryClient.invalidateQueries({ queryKey: ["connects-history"] }),
+      ]);
+      router.replace("/settings?section=connects", { scroll: false });
+    };
+
+    void confirmPurchase().catch((error) => {
+      console.error("Failed to confirm connects payment:", error);
+    });
+  }, [getToken, queryClient, router, searchParams]);
 
   const openSection = (nextSection: SettingsSectionId) => {
     setSection(nextSection);
