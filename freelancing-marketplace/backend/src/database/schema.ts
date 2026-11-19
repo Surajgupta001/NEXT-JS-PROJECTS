@@ -1,5 +1,5 @@
 import { create } from "domain";
-import { desc, relations } from "drizzle-orm";
+import { desc, is, relations } from "drizzle-orm";
 import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { stripe } from "../config/stripe.js";
 
@@ -165,3 +165,16 @@ export const connectsPurchaseHistoryRelations = relations(connects_purchase_hist
     }),
 }));
 
+export const notifications = pgTable("notifications", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    event_id: text("event_id").notNull().unique(),
+    recipient_id: text("recipient_id").notNull(),
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    link: text("link"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    is_read: boolean("is_read").default(false),
+    read_at: timestamp("read_at", { withTimezone: true }),
+    created_At: timestamp("created_At", { withTimezone: true }).defaultNow(),
+});
