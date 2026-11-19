@@ -4,12 +4,15 @@ import { app } from './app.js';
 import { SERVICE_NAME } from './config/constants.js';
 import { env } from './config/env.js';
 import { connectRedis, disconnectRedis } from './config/redis.js';
+import { disconnectNats } from './config/nats.js';
+import { startNotificationConsumer, stopNotificationConsumer } from './events/consumer.js';
 
 let server: Server | undefined;
 let isShuttingDown = false;
 
 const start = async (): Promise<void> => {
     await connectRedis();
+    await startNotificationConsumer();
     server = app.listen(env.port, () => {
         console.log(
             `${SERVICE_NAME} is listening on http://localhost:${env.port} in ${env.nodeEnv} mode`
@@ -42,6 +45,8 @@ const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
 
     try {
         await closeHttpServer();
+        await stopNotificationConsumer();
+        await disconnectNats();
         await disconnectRedis();
         process.exit(0);
     } catch (error) {
@@ -55,6 +60,7 @@ process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 void start().catch(async (error) => {
     console.error(`Failed to start ${SERVICE_NAME}: ${error}`);
-    await disconnectRedis();
+    await disconnectRedis().catch(() => undefined);
+    await disconnectNats().catch(() => undefined);
     process.exit(1);
 });
