@@ -1,5 +1,5 @@
 import { AckPolicy, ConsumerMessages, JsMsg, JSONCodec } from "nats";
-import { NotificationEvent, NOTIFICATIONS_CONSUMER, NOTIFICATIONS_STREAM } from "./subject.js";
+import { NotificationEvent, NOTIFICATIONS_CONSUMER, NOTIFICATIONS_STREAM, NOTIFICATIONS_SUBJECT } from "./subject.js";
 import { database } from "../database/client.js";
 import { notifications } from "../database/schema.js";
 import { emitNotification } from "../modules/notifications/notification.sse.js";
@@ -49,22 +49,33 @@ export const startNotificationConsumer = async () => {
     const manager = await nats.jetstreamManager();
 
     try {
-        await manager.streams.info(NOTIFICATIONS_STREAM);
+        const stream = await manager.streams.info(NOTIFICATIONS_STREAM);
+        if (!stream.config.subjects?.includes(NOTIFICATIONS_SUBJECT)) {
+            await manager.streams.update(NOTIFICATIONS_STREAM, {
+                subjects: [NOTIFICATIONS_SUBJECT],
+            });
+        }
     } catch (error) {
         await manager.streams.add({
             name: NOTIFICATIONS_STREAM,
-            subjects: [NOTIFICATIONS_STREAM],
+            subjects: [NOTIFICATIONS_SUBJECT],
         });
     }
 
     try {
-        await manager.consumers.info(NOTIFICATIONS_STREAM, NOTIFICATIONS_CONSUMER);
+        const consumerInfo = await manager.consumers.info(NOTIFICATIONS_STREAM, NOTIFICATIONS_CONSUMER);
+        if (consumerInfo.config.filter_subject !== NOTIFICATIONS_SUBJECT) {
+            await manager.consumers.update(NOTIFICATIONS_STREAM, NOTIFICATIONS_CONSUMER, {
+                ack_wait: 30_000_000,
+                filter_subject: NOTIFICATIONS_SUBJECT,
+            });
+        }
     } catch (error) {
         await manager.consumers.add(NOTIFICATIONS_STREAM, {
             durable_name: NOTIFICATIONS_CONSUMER,
             ack_policy: AckPolicy.Explicit,
             ack_wait: 30_000_000,
-            filter_subject: NOTIFICATIONS_STREAM,
+            filter_subject: NOTIFICATIONS_SUBJECT,
         });
     }
 

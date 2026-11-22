@@ -3,15 +3,19 @@
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { dashboardNotifications } from "../notifications/notifications-data";
+import { presentNotification, useNotifications, useNotificationStream } from "@/hooks/use-notification";
 
 export function NotificationsPopover() {
+
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState(
-    dashboardNotifications.slice(0, 3),
-  );
+
+  const { notifications: data, isLoading, markAllRead, markRead } = useNotifications();
+
+  const notifications = data.slice(0, 3).map(presentNotification);
   const containerRef = useRef<HTMLDivElement>(null);
-  const unreadCount = notifications.filter((item) => item.unread).length;
+  const unreadCount = data.filter((item) => !item.is_read).length;
+
+  useNotificationStream();
 
   useEffect(() => {
     if (!open) return;
@@ -31,12 +35,6 @@ export function NotificationsPopover() {
     };
   }, [open]);
 
-  const markAllRead = () => {
-    setNotifications((current) =>
-      current.map((notification) => ({ ...notification, unread: false })),
-    );
-  };
-
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -45,9 +43,8 @@ export function NotificationsPopover() {
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen((current) => !current)}
-        className={`relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-[#60655e] transition ${
-          open ? "bg-[#edf4ea] text-[#4e774b]" : "hover:bg-black/5"
-        }`}
+        className={`relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-[#60655e] transition ${open ? "bg-[#edf4ea] text-[#4e774b]" : "hover:bg-black/5"
+          }`}
       >
         <Icon icon={open ? "solar:bell-bold" : "solar:bell-linear"} width="22" />
         {unreadCount > 0 && (
@@ -63,7 +60,7 @@ export function NotificationsPopover() {
             type="button"
             aria-label="Close notifications"
             onClick={() => setOpen(false)}
-            className="fixed inset-0 top-17 z-40 cursor-default bg-black/10 sm:hidden"
+            className="fixed inset-0 z-40 cursor-default top-17 bg-black/10 sm:hidden"
           />
           <section
             role="dialog"
@@ -71,47 +68,54 @@ export function NotificationsPopover() {
             aria-label="Notifications"
             className="fixed top-18 right-3 left-3 z-50 overflow-hidden rounded-2xl border border-black/8 bg-white shadow-[0_24px_70px_rgba(26,34,26,0.18)] sm:absolute sm:top-12 sm:right-0 sm:left-auto sm:w-105"
           >
-            <header className="flex items-center justify-between border-b border-black/7 px-5 py-4">
+            <header className="flex items-center justify-between px-5 py-4 border-b border-black/7">
               <div>
                 <h2 className="font-semibold">Notifications</h2>
                 <p className="mt-0.5 text-[11px] text-[#81867e]">
                   {unreadCount ? `${unreadCount} unread updates` : "You’re all caught up"}
                 </p>
               </div>
+              
               {unreadCount > 0 && (
                 <button
                   type="button"
-                  onClick={markAllRead}
+                  onClick={() => markAllRead()}
                   className="cursor-pointer text-xs font-semibold text-[#52784f] hover:underline"
                 >
                   Mark all as read
                 </button>
               )}
+              
             </header>
 
-            <div className="max-h-105 overflow-y-auto">
+            <div className="overflow-y-auto max-h-105">
+              {isLoading && (
+                [0, 2].map((_, index) => (
+                  <div key={index} className="flex animate-pulse gap-3.5 px-5 py-5">
+                    <span className="h-10 w-10 rounded-xl bg-[#e8ece6]" />
+                    <span className="flex-1">
+                      <span className="block h-3 rounded w-36 bg-[#e3e7e1]" />
+                      <span className="block w-full h-3 mt-3 rounded bg-[#edf0eb]" />
+                    </span>
+                  </div>
+                ))
+              )}
+              
               {notifications.map((notification, index) => (
                 <Link
                   key={notification.id}
                   href={notification.href}
                   onClick={() => {
-                    setNotifications((current) =>
-                      current.map((item) =>
-                        item.id === notification.id
-                          ? { ...item, unread: false }
-                          : item,
-                      ),
-                    );
-                    setOpen(false);
+                    markRead(notification.id);
+                    setOpen(false)
                   }}
-                  className={`relative flex gap-3.5 px-5 py-4 transition hover:bg-[#f7f8f5] ${
-                    index ? "border-t border-black/6" : ""
-                  } ${notification.unread ? "bg-[#f3f7f1]" : "bg-white"}`}
+                  className={`relative flex gap-3.5 px-5 py-4 transition hover:bg-[#f7f8f5] ${index ? "border-t border-black/6" : ""
+                    } ${notification.unread ? "bg-[#f3f7f1]" : "bg-white"}`}
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#52784f] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]">
                     <Icon icon={notification.icon} width="20" />
                   </span>
-                  <span className="min-w-0 flex-1">
+                  <span className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold">
                       {notification.title}
                     </span>
@@ -128,16 +132,32 @@ export function NotificationsPopover() {
                 </Link>
               ))}
             </div>
-
-            <footer className="border-t border-black/7 bg-[#fafbf9] p-3">
-              <Link
-                href="/notifications"
-                onClick={() => setOpen(false)}
-                className="flex h-10 w-full items-center justify-center rounded-xl text-xs font-semibold text-[#4e774b] hover:bg-[#edf4ea]"
-              >
-                View all notifications
-              </Link>
-            </footer>
+            
+            {!isLoading && notifications.length === 0 && (
+              <div className="px-6 py-10 text-center">
+                <span className="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-[#edf4ea] text-[#52784f]">
+                  <Icon icon="solar:bell-off-linear" width="24" />
+                </span>
+                <p className="mt-3 text-sm font-semibold">
+                  No notifications yet
+                </p>
+                <p className="text-sm text-[#81867e]">
+                  New account and project update will appear here.
+                </p>
+              </div>
+            )}
+            
+            {isLoading || (notifications.length !== 0 && (
+              <footer className="border-t border-black/7 bg-[#fafbf9] p-3">
+                <Link
+                  href="/notifications"
+                  onClick={() => setOpen(false)}
+                  className="flex h-10 w-full items-center justify-center rounded-xl text-xs font-semibold text-[#4e774b] hover:bg-[#edf4ea]"
+                >
+                  View all notifications
+                </Link>
+              </footer>
+            ))}
           </section>
         </>
       )}
