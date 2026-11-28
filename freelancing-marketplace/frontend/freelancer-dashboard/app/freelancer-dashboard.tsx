@@ -6,11 +6,7 @@ import { useMemo, useState } from "react";
 import { DashboardHeader } from "./_components/dashboard/dashboard-header";
 import { WorkspaceSidebar } from "./_components/dashboard/workspace-sidebar";
 import { JobCard } from "./_components/jobs/job-card";
-import {
-  emptyJobFilters,
-  JobFilterPopover,
-  type JobFilters,
-} from "./_components/jobs/job-filter-popover";
+import { emptyJobFilters, JobFilterPopover, type JobFilters } from "./_components/jobs/job-filter-popover";
 import { dashboardJobs } from "./_components/jobs/jobs-data";
 import { ProposalModal } from "./_components/jobs/proposal-modal";
 import type { Job } from "./_components/jobs/types";
@@ -135,7 +131,7 @@ export function FreelancerDashboard() {
         </div>
 
         <div className="grid items-start gap-6 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
-          <WorkspaceSidebar profileStrength={85} />
+          <WorkspaceSidebar />
 
           <section className="min-w-0">
             <div className="px-3 pt-3 bg-white border rounded-2xl border-black/8">
