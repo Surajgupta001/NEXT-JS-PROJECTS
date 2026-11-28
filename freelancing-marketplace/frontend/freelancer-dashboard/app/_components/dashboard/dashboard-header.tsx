@@ -13,7 +13,7 @@ export function DashboardHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-black/7 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-17 max-w-360 items-center gap-5 px-5 sm:px-8">
+      <div className="flex items-center gap-5 px-5 mx-auto h-17 max-w-360 sm:px-8">
         <Link href="/" className="flex shrink-0 items-center gap-2.5">
           <BrandMark />
           <span className="hidden text-lg font-semibold tracking-tight sm:block">
@@ -21,7 +21,7 @@ export function DashboardHeader() {
           </span>
         </Link>
 
-        <nav className="ml-4 hidden items-center gap-1 lg:flex">
+        <nav className="items-center hidden gap-1 ml-4 lg:flex">
           {headerNavigation.map((item) => {
             const active = pathname === item.href;
             return (
@@ -41,7 +41,7 @@ export function DashboardHeader() {
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 ml-auto sm:gap-3">
           <MessagesHeaderLink />
           <NotificationsPopover />
           <AccountDropdown />
